@@ -1,0 +1,17 @@
+[package]
+name = "pipeviz"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pipewire = "0.4.1"
+rand = "0.8.4"
+log = "0.4.14"
+simple_logger="1.13.0"
+
+# egui stuff
+eframe = "0.15.0"
+egui = "0.15.0"
+egui_nodes = {path = "crates/egui_nodes"}
