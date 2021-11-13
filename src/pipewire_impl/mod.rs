@@ -64,6 +64,8 @@ pub enum PortType {
 }
 
 type Proxies = HashMap<u32, ProxyLink>;
+
+#[allow(dead_code)]
 struct ProxyLink {
     proxy: pipewire::link::Link,
     listener: pipewire::link::LinkListener,
@@ -129,7 +131,7 @@ pub fn thread_main(
     let _receiver = receiver.attach(&mainloop, {
         let state = state_rm_link;
         let mainloop = mainloop.clone();
-        
+
         move |message| match message {
             UiMessage::RemoveLink(link_id) => {
                 remove_link(link_id, &state, &registry);
@@ -139,9 +141,7 @@ pub fn thread_main(
                 to_node,
                 from_port,
                 to_port,
-            } => {
-                add_link(from_port, to_port, from_node, to_node, &state, &core)
-            }
+            } => add_link(from_port, to_port, from_node, to_node, &core),
             UiMessage::Exit => mainloop.quit(),
         }
     });
@@ -240,17 +240,21 @@ fn handle_link(
         .borrow_mut()
         .insert(link.id, ProxyLink { proxy, listener });
 }
-fn add_link(from_port: u32, to_port: u32, from_node: u32, to_node: u32, state: &Rc<RefCell<State>>, core: &Rc<Core>) {
-    core.create_object::<pipewire::link::Link, _>("link-factory", &pipewire::properties! {
-        "link.input.port" => to_port.to_string(),
-        "link.output.port" => from_port.to_string(),
+fn add_link(from_port: u32, to_port: u32, from_node: u32, to_node: u32, core: &Rc<Core>) {
+    core.create_object::<pipewire::link::Link, _>(
+        "link-factory",
+        &pipewire::properties! {
+            "link.input.port" => to_port.to_string(),
+            "link.output.port" => from_port.to_string(),
 
-        "link.input.node" => to_node.to_string(),
-        "link.output.node"=> from_node.to_string(),
+            "link.input.node" => to_node.to_string(),
+            "link.output.node"=> from_node.to_string(),
 
-        "object.linger" => "1"
+            "object.linger" => "1"
 
-    }).expect("Failed to add new link");
+        },
+    )
+    .expect("Failed to add new link");
 }
 fn remove_link(link_id: u32, state: &Rc<RefCell<State>>, registry: &Rc<Registry>) {
     let state = state.borrow_mut();

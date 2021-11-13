@@ -27,7 +27,7 @@ pub enum UiMessage {
         from_port: u32,
         to_port: u32,
     },
-    Exit
+    Exit,
 }
 #[derive(Serialize, Deserialize)]
 pub struct Theme {
@@ -44,14 +44,14 @@ pub struct Theme {
 }
 impl Default for Theme {
     fn default() -> Self {
-        Self { 
-            titlebar:egui::Color32::from_rgba_unmultiplied(0, 82, 225, 255), 
+        Self {
+            titlebar: egui::Color32::from_rgba_unmultiplied(0, 82, 225, 255),
             titlebar_hovered: egui::Color32::from_rgba_unmultiplied(90, 151, 240, 255),
-            port_in: egui::Color32::from_rgba_unmultiplied(210, 45, 45, 255), 
+            port_in: egui::Color32::from_rgba_unmultiplied(210, 45, 45, 255),
             port_in_hovered: egui::Color32::from_rgba_unmultiplied(210, 95, 95, 255),
-             port_out: egui::Color32::from_rgba_unmultiplied(70, 175, 104, 255), 
-             port_out_hovered: egui::Color32::from_rgba_unmultiplied(94, 147, 64, 255), 
-             text_color: egui::Color32::WHITE, 
+            port_out: egui::Color32::from_rgba_unmultiplied(70, 175, 104, 255),
+            port_out_hovered: egui::Color32::from_rgba_unmultiplied(94, 147, 64, 255),
+            text_color: egui::Color32::WHITE,
         }
     }
 }
@@ -71,7 +71,7 @@ impl GraphUI {
         pipewire_receiver: Receiver<PipewireMessage>,
         pipewire_sender: Sender<UiMessage>,
     ) -> Self {
-        let mut context = egui_nodes::Context::default();
+        let context = egui_nodes::Context::default();
         //context.attribute_flag_push(egui_nodes::AttributeFlags::EnableLinkCreationOnSnap);
         //context.attribute_flag_push(egui_nodes::AttributeFlags::EnableLinkDetachWithDragClick);
 
@@ -85,70 +85,64 @@ impl GraphUI {
             show_about: false,
         }
     }
-    fn theme_window(&mut self, ctx: &egui::CtxRef, ui: &mut egui::Ui) {
+    fn theme_window(&mut self, ctx: &egui::CtxRef, _ui: &mut egui::Ui) {
         let theme = &mut self.theme;
         egui::Window::new("Theme")
-        .open(&mut self.show_theme)
-        .resizable(true)
-        .show(ctx, |ui| {
-            egui::Grid::new("theme_grid")
-            .num_columns(2)
-            .show(ui, |ui| {
-                
-                ui.label("Node titlebar");
-                ui.color_edit_button_srgba(&mut theme.titlebar);
-                ui.end_row();
+            .open(&mut self.show_theme)
+            .resizable(true)
+            .show(ctx, |ui| {
+                egui::Grid::new("theme_grid").num_columns(2).show(ui, |ui| {
+                    ui.label("Node titlebar");
+                    ui.color_edit_button_srgba(&mut theme.titlebar);
+                    ui.end_row();
 
-                ui.label("Node titlebar hovered");
-                ui.color_edit_button_srgba(&mut theme.titlebar_hovered);
-                ui.end_row();
+                    ui.label("Node titlebar hovered");
+                    ui.color_edit_button_srgba(&mut theme.titlebar_hovered);
+                    ui.end_row();
 
-                ui.label("Input port");
-                ui.color_edit_button_srgba(&mut theme.port_in);
-                ui.end_row();
+                    ui.label("Input port");
+                    ui.color_edit_button_srgba(&mut theme.port_in);
+                    ui.end_row();
 
-                ui.label("Input port hovered");
-                ui.color_edit_button_srgba(&mut theme.port_in_hovered);
-                ui.end_row();
+                    ui.label("Input port hovered");
+                    ui.color_edit_button_srgba(&mut theme.port_in_hovered);
+                    ui.end_row();
 
-                ui.label("Output port");
-                ui.color_edit_button_srgba(&mut theme.port_out);
-                ui.end_row();
+                    ui.label("Output port");
+                    ui.color_edit_button_srgba(&mut theme.port_out);
+                    ui.end_row();
 
-                ui.label("Output port hovered");
-                ui.color_edit_button_srgba(&mut theme.port_out_hovered);
-                ui.end_row();
+                    ui.label("Output port hovered");
+                    ui.color_edit_button_srgba(&mut theme.port_out_hovered);
+                    ui.end_row();
 
-
-                ui.label("Text color");
-                ui.color_edit_button_srgba(&mut theme.text_color);
-                ui.end_row();
-
+                    ui.label("Text color");
+                    ui.color_edit_button_srgba(&mut theme.text_color);
+                    ui.end_row();
+                });
             });
-        });
     }
-    fn about_window(&mut self, ctx: &egui::CtxRef, ui: &mut egui::Ui) {
+    fn about_window(&mut self, ctx: &egui::CtxRef, _ui: &mut egui::Ui) {
         egui::Window::new("About")
-        .open(&mut self.show_about)
-        .resizable(false)
-        .show(ctx, |ui| {
-            egui::Grid::new("theme_grid").show(ui, |ui|{
-                ui.label(env!("CARGO_PKG_NAME"));
-                ui.end_row();
+            .open(&mut self.show_about)
+            .resizable(false)
+            .show(ctx, |ui| {
+                egui::Grid::new("theme_grid").show(ui, |ui| {
+                    ui.label(env!("CARGO_PKG_NAME"));
+                    ui.end_row();
 
-                ui.label("Version");
-                ui.label(env!("CARGO_PKG_VERSION"));
-                ui.end_row();
-                
-                ui.label("Author:");
-                ui.hyperlink("https://github.com/Ax9D");
-                ui.end_row();
-                
-            })
-        });
+                    ui.label("Version");
+                    ui.label(env!("CARGO_PKG_VERSION"));
+                    ui.end_row();
+
+                    ui.label("Author:");
+                    ui.hyperlink("https://github.com/Ax9D");
+                    ui.end_row();
+                })
+            });
     }
     fn process_message(&mut self, message: PipewireMessage) {
-        let graph = &mut self.graph;
+        let _graph = &mut self.graph;
 
         match message {
             PipewireMessage::NodeAdded {
@@ -170,7 +164,7 @@ impl GraphUI {
 
                 self.graph
                     .get_node_mut(node_id)
-                    .expect("Node with provided id doesn't exist")
+                    .expect("Port with provided id doesn't exist")
                     .add_port(port);
             }
 
@@ -192,7 +186,7 @@ impl GraphUI {
 
                 self.graph.add_link(link);
             }
-            PipewireMessage::LinkStateChanged { id, active } => {}
+            PipewireMessage::LinkStateChanged { id: _, active: _ } => {}
 
             PipewireMessage::NodeRemoved { id } => {
                 self.graph.remove_node(id);
@@ -200,7 +194,7 @@ impl GraphUI {
             PipewireMessage::PortRemoved { node_id, id } => {
                 self.graph
                     .get_node_mut(node_id)
-                    .expect("Node with provided id doesn't exist")
+                    .expect("Port with provided id doesn't exist")
                     .remove_port(id);
             }
             PipewireMessage::LinkRemoved { id } => {
@@ -241,11 +235,9 @@ impl epi::App for GraphUI {
 
     fn save(&mut self, storage: &mut dyn epi::Storage) {
         epi::set_value(storage, "theme", &self.theme);
-
     }
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
         self.pump_messages();
-
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
@@ -268,7 +260,6 @@ impl epi::App for GraphUI {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-
             if let Some(link_update) = self.graph.draw(&mut self.nodes_ctx, ui, &self.theme) {
                 match link_update {
                     graph::LinkUpdate::Created {
@@ -302,10 +293,11 @@ impl epi::App for GraphUI {
                 self.about_window(ctx, ui);
             }
         });
-
     }
     fn on_exit(&mut self) {
-        self.pipewire_sender.send(UiMessage::Exit).expect("Failed to send ui message");
+        self.pipewire_sender
+            .send(UiMessage::Exit)
+            .expect("Failed to send ui message");
     }
 }
 

@@ -5,7 +5,7 @@ use egui_nodes::{LinkArgs, NodeArgs, NodeConstructor, PinArgs};
 
 use crate::pipewire_impl::MediaType;
 
-use super::{Theme, link::Link, node::Node};
+use super::{link::Link, node::Node, Theme};
 
 pub enum LinkUpdate {
     Created {
@@ -45,6 +45,7 @@ impl Graph {
 
         removed
     }
+    #[allow(dead_code)]
     pub fn get_node(&self, id: u32) -> Option<&Node> {
         self.nodes.get(&id)
     }
@@ -55,6 +56,14 @@ impl Graph {
         log::debug!("{}->{}", link.from_port, link.to_port);
 
         self.links.insert(link.id, link);
+    }
+    #[allow(dead_code)]
+    pub fn get_link(&self, id: u32) -> Option<&Link> {
+        self.links.get(&id)
+    }
+    #[allow(dead_code)]
+    pub fn get_link_mut(&mut self, id: u32) -> Option<&mut Link> {
+        self.links.get_mut(&id)
     }
     pub fn remove_link(&mut self, id: u32) -> Option<Link> {
         let removed = self.links.remove(&id);
@@ -106,21 +115,23 @@ impl Graph {
         &mut self,
         nodes_ctx: &mut egui_nodes::Context,
         ui: &mut egui::Ui,
-        theme: &Theme
+        theme: &Theme,
     ) -> Option<LinkUpdate> {
         //println!("{:?}", self.topo_sort());
         let nodes = self
             .nodes
             .values_mut()
             .map(|node| {
-                let mut ui_node = NodeConstructor::new(node.id() as usize, NodeArgs {
-                    titlebar: Some(theme.titlebar),
-                    titlebar_hovered: Some(theme.titlebar_hovered),
-                    ..Default::default()
-                });
+                let mut ui_node = NodeConstructor::new(
+                    node.id() as usize,
+                    NodeArgs {
+                        titlebar: Some(theme.titlebar),
+                        titlebar_hovered: Some(theme.titlebar_hovered),
+                        ..Default::default()
+                    },
+                );
 
                 if node.newly_added {
-
                     //FIX ME: Don't layout new nodes randomly, topological sort....
                     ui_node.with_origin(egui::pos2(
                         rand::random::<f32>() * ui.available_width(),
@@ -137,8 +148,9 @@ impl Graph {
                         None => "",
                     };
 
-                    egui::Label::new(format!("{} {}", node.name(),kind))
-                    .text_color(theme.text_color).ui(ui) 
+                    egui::Label::new(format!("{} {}", node.name(), kind))
+                        .text_color(theme.text_color)
+                        .ui(ui)
                 });
 
                 let mut ports = node.ports().values().collect::<Vec<_>>();
@@ -162,9 +174,9 @@ impl Graph {
                             ui_node.with_output_attribute(
                                 port.id() as usize,
                                 PinArgs {
-                                        background: Some(theme.port_out),
-                                        hovered: Some(theme.port_out_hovered),
-                                        ..Default::default()
+                                    background: Some(theme.port_out),
+                                    hovered: Some(theme.port_out_hovered),
+                                    ..Default::default()
                                 },
                                 |ui| ui.label(port.name()),
                             );
@@ -186,14 +198,21 @@ impl Graph {
                 LinkArgs::default(),
             )
         });
-    
+
         nodes_ctx.show(nodes, links, ui);
 
         if let Some(link) = nodes_ctx.link_destroyed() {
-
             Some(LinkUpdate::Removed(link as u32))
-        } else if let Some((from_port, from_node, to_port, to_node, _)) = nodes_ctx.link_created_node() {
-            log::debug!("Created new link:\nfrom_port {}, to_port {}, from_node {}, to_node {}", from_port,to_port, from_node, to_node);
+        } else if let Some((from_port, from_node, to_port, to_node, _)) =
+            nodes_ctx.link_created_node()
+        {
+            log::debug!(
+                "Created new link:\nfrom_port {}, to_port {}, from_node {}, to_node {}",
+                from_port,
+                to_port,
+                from_node,
+                to_node
+            );
 
             let from_port = from_port as u32;
             let to_port = to_port as u32;
