@@ -36,6 +36,9 @@ impl Node {
     pub fn name(&self) -> &str {
         &self.name
     }
+    pub fn media_type(&self) -> Option<MediaType> {
+        self.media_type
+    }
     pub fn ports(&self) -> &HashMap<u32, Port> {
         &self.ports
     }

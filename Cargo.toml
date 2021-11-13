@@ -1,5 +1,5 @@
 [package]
-name = "pipeviz"
+name = "pw-viz"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,6 +12,7 @@ log = "0.4.14"
 simple_logger="1.13.0"
 
 # egui stuff
-eframe = "0.15.0"
+eframe = { version = "0.15.0", features=["persistence"] }
 egui = "0.15.0"
 egui_nodes = {path = "crates/egui_nodes"}
+serde = { version = "1", features = ["derive"] }

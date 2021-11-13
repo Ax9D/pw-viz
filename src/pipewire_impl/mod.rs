@@ -7,8 +7,10 @@ use pipewire::{
     prelude::ReadableDict,
     registry::{GlobalObject, Registry},
     spa::ForeignDict,
-    Context, MainLoop,
+    Context, Core, MainLoop,
 };
+
+use crate::ui::UiMessage;
 
 use self::state::State;
 pub enum PipewireMessage {
@@ -47,7 +49,7 @@ pub enum PipewireMessage {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum MediaType {
     Audio,
     Video,
@@ -66,10 +68,13 @@ struct ProxyLink {
     proxy: pipewire::link::Link,
     listener: pipewire::link::LinkListener,
 }
-pub fn thread_main(sender: &Rc<Sender<PipewireMessage>>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn thread_main(
+    sender: Rc<Sender<PipewireMessage>>,
+    receiver: pipewire::channel::Receiver<UiMessage>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let mainloop = MainLoop::new()?;
     let context = Context::new(&mainloop)?;
-    let core = context.connect(None)?;
+    let core = Rc::new(context.connect(None)?);
 
     let proxies = Rc::new(RefCell::new(Default::default()));
     let proxies_rm = proxies.clone();
@@ -82,20 +87,23 @@ pub fn thread_main(sender: &Rc<Sender<PipewireMessage>>) -> Result<(), Box<dyn s
 
     let state = Rc::new(RefCell::new(State::new()));
     let state_rm = state.clone();
+    let state_rm_link = state.clone();
 
     let _listener = registry
         .add_listener_local()
-        .global(move |global| match global.type_ {
-            pipewire::types::ObjectType::Node => {
-                handle_node(global, &state, &sender);
+        .global({
+            move |global| match global.type_ {
+                pipewire::types::ObjectType::Node => {
+                    handle_node(global, &state, &sender);
+                }
+                pipewire::types::ObjectType::Link => {
+                    handle_link(global, &state, &sender, &registry_clone, &proxies);
+                }
+                pipewire::types::ObjectType::Port => {
+                    handle_port(global, &state, &sender);
+                }
+                _ => {}
             }
-            pipewire::types::ObjectType::Link => {
-                handle_link(global, &state, &sender, &registry_clone, &proxies);
-            }
-            pipewire::types::ObjectType::Port => {
-                handle_port(global, &state, &sender);
-            }
-            _ => {}
         })
         .global_remove(move |id| match state_rm.borrow_mut().remove(id) {
             Some(object) => {
@@ -117,6 +125,26 @@ pub fn thread_main(sender: &Rc<Sender<PipewireMessage>>) -> Result<(), Box<dyn s
             }
         })
         .register();
+
+    let _receiver = receiver.attach(&mainloop, {
+        let state = state_rm_link;
+        let mainloop = mainloop.clone();
+        
+        move |message| match message {
+            UiMessage::RemoveLink(link_id) => {
+                remove_link(link_id, &state, &registry);
+            }
+            UiMessage::AddLink {
+                from_node,
+                to_node,
+                from_port,
+                to_port,
+            } => {
+                add_link(from_port, to_port, from_node, to_node, &state, &core)
+            }
+            UiMessage::Exit => mainloop.quit(),
+        }
+    });
 
     mainloop.run();
 
@@ -194,7 +222,7 @@ fn handle_link(
                 }
             } else {
                 state.add(id, state::GlobalObject::Link);
-
+                log::debug!("New pipewire link was added : {}", id);
                 sender
                     .send(PipewireMessage::LinkAdded {
                         from_node,
@@ -211,6 +239,30 @@ fn handle_link(
     proxies
         .borrow_mut()
         .insert(link.id, ProxyLink { proxy, listener });
+}
+fn add_link(from_port: u32, to_port: u32, from_node: u32, to_node: u32, state: &Rc<RefCell<State>>, core: &Rc<Core>) {
+    core.create_object::<pipewire::link::Link, _>("link-factory", &pipewire::properties! {
+        "link.input.port" => to_port.to_string(),
+        "link.output.port" => from_port.to_string(),
+
+        "link.input.node" => to_node.to_string(),
+        "link.output.node"=> from_node.to_string(),
+
+        "object.linger" => "1"
+
+    }).expect("Failed to add new link");
+}
+fn remove_link(link_id: u32, state: &Rc<RefCell<State>>, registry: &Rc<Registry>) {
+    let state = state.borrow_mut();
+
+    if let Some(&state::GlobalObject::Link) = state.get(link_id) {
+        match registry.destroy_global(link_id).into_result() {
+            Ok(_) => {}
+            Err(err) => log::error!("SPA error: {}", err),
+        }
+    } else {
+        log::warn!("Tried to destroy unregistered object with id: {}", link_id);
+    }
 }
 
 fn handle_port(
