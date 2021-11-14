@@ -32,14 +32,15 @@ Next you can copy the resulting binary(pw-viz) which will be found inside ```tar
  | Left Click + Drag | Move nodes, create links between ports |
  | <kbd>Alt</kbd>  + Left Click + Drag| Remove links |
  | Middle Mouse + Drag | Pan the graph |
+ | <kbd>Ctrl</kbd> (Debug builds only) | Shows pipewire ids of nodes and ports |
 
-Zooming is not currently supported
+Zooming is not supported currently
 
 
 # Libraries Used
+* [pipewire-rs](https://gitlab.freedesktop.org/pipewire/pipewire-rs): Rust bindings for PipeWire
 * [egui-rs](https://github.com/emilk/egui): an easy-to-use immediate mode GUI in pure Rust
 * A modified fork of [egui-nodes](https://github.com/haighcam/egui_nodes): A egui port of [imnodes](https://github.com/Nelarius/imnodes)
-* [pipewire-rs](https://gitlab.freedesktop.org/pipewire/pipewire-rs): Rust bindings for PipeWire
 
 # Thanks / Alternatives
 Pipewire connection code is inspired by helvum's implementation

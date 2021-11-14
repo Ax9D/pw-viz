@@ -14,5 +14,5 @@ simple_logger="1.13.0"
 # egui stuff
 eframe = { version = "0.15.0", features=["persistence"] }
 egui = "0.15.0"
-egui_nodes = {path = "crates/egui_nodes"}
+egui_nodes = {git = "https://github.com/Ax9D/egui_nodes", rev="74eccc4"}
 serde = { version = "1", features = ["derive"] }
