@@ -1,13 +1,13 @@
 <div align="center">
     <h1>pw-viz</h1>
-<h3> A simple and elegant, pipewire graph visualizer/patchbay. </h3>
+<h4> A simple and elegant, pipewire graph editor </h4>
 
 ![demo image](demo.png)
 
 </div>
 
 
-This is still a WIP, the nodes aren't laid out based on their dependencies atm.
+This is still a WIP, node layouting is kinda jank at the moment.
 
 # Installation
 Clone the repo:
@@ -19,7 +19,9 @@ To build pw-viz, you will need to have Rust installed. The recommended way to in
 
 Once Rust is installed, you can build pw-viz: 
 
-```cargo build --release```
+```
+cargo build --release
+```
 
 Next you can copy the resulting binary(pw-viz) which will be found inside ```target/release``` to a directory in your ```$PATH```, like  ```/usr/bin/```
 
@@ -27,9 +29,9 @@ Next you can copy the resulting binary(pw-viz) which will be found inside ```tar
 
  ||Description|
  |--- |---
- | Click + Drag | Move nodes, create links between ports |
+ | Left Click + Drag | Move nodes, create links between ports |
  | <kbd>Alt</kbd>  + Left Click + Drag| Remove links |
- | Middle Mouse | Pan the graph |
+ | Middle Mouse + Drag | Pan the graph |
 
 Zooming is not currently supported
 

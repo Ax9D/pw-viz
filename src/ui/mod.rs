@@ -29,28 +29,28 @@ pub enum UiMessage {
     },
     Exit,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Theme {
-    port_in: egui::Color32,
-    port_in_hovered: egui::Color32,
-
-    port_out: egui::Color32,
-    port_out_hovered: egui::Color32,
-
     titlebar: egui::Color32,
     titlebar_hovered: egui::Color32,
+
+    audio_port: egui::Color32,
+    audio_port_hovered: egui::Color32,
+
+    video_port: egui::Color32,
+    video_port_hovered: egui::Color32,
 
     text_color: egui::Color32,
 }
 impl Default for Theme {
     fn default() -> Self {
         Self {
-            titlebar: egui::Color32::from_rgba_unmultiplied(0, 82, 225, 255),
-            titlebar_hovered: egui::Color32::from_rgba_unmultiplied(90, 151, 240, 255),
-            port_in: egui::Color32::from_rgba_unmultiplied(210, 45, 45, 255),
-            port_in_hovered: egui::Color32::from_rgba_unmultiplied(210, 95, 95, 255),
-            port_out: egui::Color32::from_rgba_unmultiplied(70, 175, 104, 255),
-            port_out_hovered: egui::Color32::from_rgba_unmultiplied(94, 147, 64, 255),
+            titlebar: egui::Color32::from_rgba_unmultiplied(78, 107, 181, 255),
+            titlebar_hovered: egui::Color32::from_rgba_unmultiplied(112, 127, 192, 255),
+            audio_port: egui::Color32::from_rgba_unmultiplied(72, 184, 121, 255),
+            audio_port_hovered: egui::Color32::from_rgba_unmultiplied(95, 210, 170, 255),
+            video_port: egui::Color32::from_rgba_unmultiplied(149, 56, 173, 255),
+            video_port_hovered: egui::Color32::from_rgba_unmultiplied(148, 96, 182, 255),
             text_color: egui::Color32::WHITE,
         }
     }
@@ -65,7 +65,6 @@ pub struct GraphUI {
     show_theme: bool,
     show_about: bool,
 }
-
 impl GraphUI {
     pub fn new(
         pipewire_receiver: Receiver<PipewireMessage>,
@@ -100,26 +99,33 @@ impl GraphUI {
                     ui.color_edit_button_srgba(&mut theme.titlebar_hovered);
                     ui.end_row();
 
-                    ui.label("Input port");
-                    ui.color_edit_button_srgba(&mut theme.port_in);
+                    ui.label("Audio port");
+                    ui.color_edit_button_srgba(&mut theme.audio_port);
                     ui.end_row();
 
-                    ui.label("Input port hovered");
-                    ui.color_edit_button_srgba(&mut theme.port_in_hovered);
+                    ui.label("Audio port hovered");
+                    ui.color_edit_button_srgba(&mut theme.audio_port_hovered);
                     ui.end_row();
 
-                    ui.label("Output port");
-                    ui.color_edit_button_srgba(&mut theme.port_out);
+                    ui.label("Video port");
+                    ui.color_edit_button_srgba(&mut theme.video_port);
                     ui.end_row();
 
-                    ui.label("Output port hovered");
-                    ui.color_edit_button_srgba(&mut theme.port_out_hovered);
+                    ui.label("Video port hovered");
+                    ui.color_edit_button_srgba(&mut theme.video_port_hovered);
                     ui.end_row();
 
                     ui.label("Text color");
                     ui.color_edit_button_srgba(&mut theme.text_color);
                     ui.end_row();
                 });
+
+                if ui.button("Default").clicked() {
+                    #[cfg(debug_assertions)]
+                    log::debug!("Old theme:\n{:?}", theme);
+
+                    *theme = Theme::default();
+                }
             });
     }
     fn about_window(&mut self, ctx: &egui::CtxRef, _ui: &mut egui::Ui) {
@@ -260,7 +266,10 @@ impl epi::App for GraphUI {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            if let Some(link_update) = self.graph.draw(&mut self.nodes_ctx, ui, &self.theme) {
+            if let Some(link_update) =
+                self.graph
+                    .draw(ctx, &mut self.nodes_ctx, ui, &self.theme)
+            {
                 match link_update {
                     graph::LinkUpdate::Created {
                         from_port,
