@@ -7,6 +7,8 @@ use crate::pipewire_impl::MediaType;
 
 use super::{link::Link, node::Node, Theme};
 
+///Represents changes to any links that might happend in the ui
+///These changes are used to send updates to the pipewire thread
 pub enum LinkUpdate {
     Created {
         from_port: u32,
@@ -19,13 +21,18 @@ pub enum LinkUpdate {
     Removed(u32),
 }
 pub struct Graph {
+    nodes_ctx: egui_nodes::Context,
     nodes: HashMap<u32, Node>, //Node id to Node
     links: HashMap<u32, Link>, //Link id to Link
 }
 
 impl Graph {
     pub fn new() -> Self {
+        //context.attribute_flag_push(egui_nodes::AttributeFlags::EnableLinkCreationOnSnap);
+        //context.attribute_flag_push(egui_nodes::AttributeFlags::EnableLinkDetachWithDragClick);
         Self {
+            nodes_ctx: egui_nodes::Context::default(),
+
             nodes: HashMap::new(),
             links: HashMap::new(),
         }
@@ -77,8 +84,11 @@ impl Graph {
 
         removed
     }
+    ///Naive, inefficient and weird implementation of Kahn's algorithm
     fn topo_sort(&self) -> Vec<u32> {
-        //FIX ME: Optimize...
+        //FIX ME
+
+        //Node id to in-degree(no. of nodes that output to this node)
         let mut indegrees = self
             .nodes
             .keys()
@@ -94,10 +104,20 @@ impl Graph {
             })
             .collect::<HashMap<u32, usize>>();
 
-        let adj_list = self.nodes.keys().map(|&id| {
-            let adj = self.links.values().filter(|link|link.from_node == id).map(|link|link.to_node).collect::<HashSet<u32>>();
-            (id, adj)
-        }).collect::<HashMap<u32, _>>();
+        //Adjacency hashmap, maps node id to neighbouring node ids
+        let adj_list = self
+            .nodes
+            .keys()
+            .map(|&id| {
+                let adj = self
+                    .links
+                    .values()
+                    .filter(|link| link.from_node == id)
+                    .map(|link| link.to_node)
+                    .collect::<HashSet<u32>>();
+                (id, adj)
+            })
+            .collect::<HashMap<u32, _>>();
 
         //println!("Indegrees {:?}", indegrees);
         //println!("Adj list {:?}", self.adj_list);
@@ -105,12 +125,14 @@ impl Graph {
         let mut queue: Vec<u32> = Vec::new();
 
         for node_id in self.nodes.keys() {
+            //Put nodes which are "detached"(i.e of in-degree=0) from the graph into the queue for processing
             if indegrees[node_id] == 0 {
                 queue.push(*node_id);
             }
         }
 
         let mut top_order = Vec::new();
+
         while !queue.is_empty() {
             //println!("Queue: {:?}", queue);
             let u = queue.remove(0);
@@ -118,10 +140,15 @@ impl Graph {
             top_order.push(u);
 
             if let Some(adj_nodes) = adj_list.get(&u) {
+                //Check nodes that lead out from this node
                 for node_id in adj_nodes {
+                    //Remove link from parent node to this node
                     let indegree_of_node = indegrees.get_mut(node_id).unwrap();
                     *indegree_of_node -= 1;
+
+                    //Check if that detached the node from the graph
                     if *indegree_of_node == 0 {
+                        //If it did, we have a new detached node to process
                         queue.push(*node_id);
                     }
                 }
@@ -133,19 +160,23 @@ impl Graph {
     pub fn draw(
         &mut self,
         ctx: &egui::CtxRef,
-        nodes_ctx: &mut egui_nodes::Context,
         ui: &mut egui::Ui,
         theme: &Theme,
     ) -> Option<LinkUpdate> {
+        //Find the topologically sorted order of nodes in the graph
+        //Nodes are currently laid out based on this order
         let order = self.topo_sort();
+
         //println!("{:?}", order);
 
-        let debug = cfg!(debug_assertions) && ctx.input().modifiers.ctrl;
+        //In debug mode, Ctrl is used to trigger the debug view
+        let debug_view = cfg!(debug_assertions) && ctx.input().modifiers.ctrl;
 
         let mut ui_nodes = Vec::with_capacity(self.nodes.len());
 
         let padding = 75.0;
         let mut x = padding;
+
         for node_id in order {
             let node = self.nodes.get_mut(&node_id).unwrap();
 
@@ -160,9 +191,13 @@ impl Graph {
             );
 
             if node.newly_added {
-                ui_node.with_origin(egui::pos2(x , rand::random::<f32>() * ui.available_height()));
-                x += padding;
                 node.newly_added = false;
+
+                //Horizontally shift each node to the right of the previous one
+                //Also put it at a random point vertically
+                ui_node.with_origin(egui::pos2(x, rand::random::<f32>() * ui.available_height()));
+
+                x += padding;
             }
 
             let media_type = node.media_type();
@@ -174,8 +209,8 @@ impl Graph {
             };
 
             let title = {
-                if debug {
-                    format!("{}[{}]{}", node.name(), node.id(), kind)
+                if debug_view {
+                    format!("{}[{}]{}", node.name(), node.id(), kind) //Display node id if in debug view
                 } else {
                     format!("{} {}", node.name(), kind)
                 }
@@ -183,7 +218,7 @@ impl Graph {
 
             ui_node.with_title(|ui| egui::Label::new(title).text_color(theme.text_color).ui(ui));
 
-            Self::draw_ports(&mut ui_node, node, theme, debug);
+            Self::draw_ports(&mut ui_node, node, theme, debug_view);
 
             ui_nodes.push(ui_node);
         }
@@ -197,11 +232,13 @@ impl Graph {
             )
         });
 
-        nodes_ctx.show(ui_nodes, links, ui);
+        self.nodes_ctx.show(ui_nodes, links, ui);
 
-        if let Some(link) = nodes_ctx.link_destroyed() {
+        if let Some(link) = self.nodes_ctx.link_destroyed() {
             Some(LinkUpdate::Removed(link as u32))
-        } else if let Some((from_port, from_node, to_port, to_node, _)) = nodes_ctx.link_created_node() {
+        } else if let Some((from_port, from_node, to_port, to_node, _)) =
+            self.nodes_ctx.link_created_node()
+        {
             log::debug!(
                 "Created new link:\nfrom_port {}, to_port {}, from_node {}, to_node {}",
                 from_port,
@@ -227,7 +264,7 @@ impl Graph {
             None
         }
     }
-    
+
     // pub fn draw_old(
     //     &mut self,
     //     ctx: &egui::CtxRef,
@@ -328,6 +365,7 @@ impl Graph {
     fn draw_ports(ui_node: &mut NodeConstructor, node: &Node, theme: &Theme, debug: bool) {
         let mut ports = node.ports().values().collect::<Vec<_>>();
 
+        //Sorts ports based on alphabetical ordering
         ports.sort_by(|a, b| a.name().cmp(b.name()));
 
         for port in ports {

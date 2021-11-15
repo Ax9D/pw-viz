@@ -9,7 +9,7 @@ pub struct Node {
     id: u32,
     name: String,
     media_type: Option<MediaType>,
-    ports: HashMap<u32, Port>,
+    ports: HashMap<u32, Port>, //Port id to Port
     pub(super) newly_added: bool,
 }
 

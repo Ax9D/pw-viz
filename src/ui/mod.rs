@@ -14,8 +14,8 @@ use link::Link;
 use node::Node;
 use port::Port;
 
-pub const WIDTH: u32 = 1280;
-pub const HEIGHT: u32 = 720;
+pub const INITIAL_WIDTH: u32 = 1280;
+pub const INITIAL_HEIGHT: u32 = 720;
 
 #[derive(Debug)]
 pub enum UiMessage {
@@ -60,7 +60,6 @@ pub struct GraphUI {
     graph: Graph,
     pipewire_receiver: Receiver<PipewireMessage>,
     pipewire_sender: Sender<UiMessage>,
-    nodes_ctx: egui_nodes::Context,
     theme: Theme,
     show_theme: bool,
     show_about: bool,
@@ -70,15 +69,10 @@ impl GraphUI {
         pipewire_receiver: Receiver<PipewireMessage>,
         pipewire_sender: Sender<UiMessage>,
     ) -> Self {
-        let context = egui_nodes::Context::default();
-        //context.attribute_flag_push(egui_nodes::AttributeFlags::EnableLinkCreationOnSnap);
-        //context.attribute_flag_push(egui_nodes::AttributeFlags::EnableLinkDetachWithDragClick);
-
         GraphUI {
             graph: Graph::new(),
             pipewire_receiver,
             pipewire_sender,
-            nodes_ctx: context,
             theme: Theme::default(),
             show_theme: false,
             show_about: false,
@@ -147,6 +141,7 @@ impl GraphUI {
                 })
             });
     }
+    ///Update the graph ui based on the message sent by the pipewire thread
     fn process_message(&mut self, message: PipewireMessage) {
         let _graph = &mut self.graph;
 
@@ -208,6 +203,7 @@ impl GraphUI {
             }
         };
     }
+    ///Keep processing messages in a non blocking way until there aren't any new messages
     fn pump_messages(&mut self) {
         loop {
             match self.pipewire_receiver.try_recv() {
@@ -239,9 +235,13 @@ impl epi::App for GraphUI {
         }
     }
 
+    /// Called by the frame work to save state before shutdown.
+    /// Note that you must enable the `persistence` feature for this to work.
     fn save(&mut self, storage: &mut dyn epi::Storage) {
         epi::set_value(storage, "theme", &self.theme);
     }
+
+    /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
         self.pump_messages();
 
@@ -266,10 +266,8 @@ impl epi::App for GraphUI {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            if let Some(link_update) =
-                self.graph
-                    .draw(ctx, &mut self.nodes_ctx, ui, &self.theme)
-            {
+            //If any new links were created/removed, notify the pipewire thread
+            if let Some(link_update) = self.graph.draw(ctx, ui, &self.theme) {
                 match link_update {
                     graph::LinkUpdate::Created {
                         from_port,
@@ -311,7 +309,7 @@ impl epi::App for GraphUI {
 }
 
 pub fn run_graph_ui(receiver: Receiver<PipewireMessage>, sender: Sender<UiMessage>) {
-    let initial_window_size = egui::vec2(WIDTH as f32, HEIGHT as f32);
+    let initial_window_size = egui::vec2(INITIAL_WIDTH as f32, INITIAL_HEIGHT as f32);
     eframe::run_native(
         Box::new(GraphUI::new(receiver, sender)),
         eframe::NativeOptions {

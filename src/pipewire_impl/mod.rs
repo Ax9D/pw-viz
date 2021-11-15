@@ -70,6 +70,8 @@ struct ProxyLink {
     proxy: pipewire::link::Link,
     listener: pipewire::link::LinkListener,
 }
+///Pipewire mainloop runs on a separate thread, and notifies the UI thread of any changes using a mpsc channel
+/// thread_main is the entry point of this thread
 pub fn thread_main(
     sender: Rc<Sender<PipewireMessage>>,
     receiver: pipewire::channel::Receiver<UiMessage>,
@@ -93,6 +95,7 @@ pub fn thread_main(
 
     let _listener = registry
         .add_listener_local()
+        //Called when a global object is added
         .global({
             move |global| match global.type_ {
                 pipewire::types::ObjectType::Node => {
@@ -107,6 +110,7 @@ pub fn thread_main(
                 _ => {}
             }
         })
+        //Called when a global object is removed
         .global_remove(move |id| match state_rm.borrow_mut().remove(id) {
             Some(object) => {
                 let message = match object {
@@ -128,6 +132,8 @@ pub fn thread_main(
         })
         .register();
 
+    //This thread also receives messages from the ui thread to update the pipewire graph
+    //Messages are sent on a special pipewire channel which needs to be registered with the main loop
     let _receiver = receiver.attach(&mainloop, {
         let state = state_rm_link;
         let mainloop = mainloop.clone();
