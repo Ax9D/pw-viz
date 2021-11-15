@@ -32,7 +32,7 @@ Next you can copy the resulting binary(pw-viz) which will be found inside ```tar
  | Left Click + Drag | Move nodes, create links between ports |
  | <kbd>Alt</kbd>  + Left Click + Drag| Remove links |
  | Middle Mouse + Drag | Pan the graph |
- | <kbd>Ctrl</kbd> (Debug builds only) | Shows pipewire ids of nodes and ports |
+ | <kbd>Ctrl</kbd> | Shows pipewire ids of nodes and ports |
 
 Zooming is not supported currently
 

@@ -169,14 +169,13 @@ impl Graph {
 
         //println!("{:?}", order);
 
-        //In debug mode, Ctrl is used to trigger the debug view
-        let debug_view = cfg!(debug_assertions) && ctx.input().modifiers.ctrl;
+        //Ctrl is used to trigger the debug view
+        let debug_view = ctx.input().modifiers.ctrl;
 
         let mut ui_nodes = Vec::with_capacity(self.nodes.len());
 
+        let mut prev_pos= egui::pos2(ui.available_width()/4.0, rand::random::<f32>());
         let padding = 75.0;
-        let mut x = padding;
-
         for node_id in order {
             let node = self.nodes.get_mut(&node_id).unwrap();
 
@@ -190,15 +189,24 @@ impl Graph {
                 },
             );
 
-            if node.newly_added {
-                node.newly_added = false;
 
-                //Horizontally shift each node to the right of the previous one
-                //Also put it at a random point vertically
-                ui_node.with_origin(egui::pos2(x, rand::random::<f32>() * ui.available_height()));
+            // if node.position.is_none() {
 
-                x += padding;
-            }
+            //     //Horizontally shift each node to the right of the previous one
+            //     //Also put it at a random point vertically
+            //     ui_node.with_origin(egui::pos2(pos.x + padding, rand::random::<f32>() * ui.available_height()));
+
+            // } else {
+            //     ui_node.with_origin(egui::pos2(ui.available_width() / 4.0, rand::random::<f32>() * ui.available_height()));
+            // }
+
+            let node_position = node.position.unwrap_or_else(|| {
+                egui::pos2(prev_pos.x + padding, rand::random::<f32>() * ui.available_height())
+            });
+
+            prev_pos = node_position;
+
+            ui_node.with_origin(node_position);
 
             let media_type = node.media_type();
             let kind = match media_type {
@@ -233,6 +241,10 @@ impl Graph {
         });
 
         self.nodes_ctx.show(ui_nodes, links, ui);
+
+        for (&id, node) in self.nodes.iter_mut() {
+            node.position = self.nodes_ctx.get_node_pos_grid_space(id as usize);
+        }
 
         if let Some(link) = self.nodes_ctx.link_destroyed() {
             Some(LinkUpdate::Removed(link as u32))

@@ -10,7 +10,7 @@ pub struct Node {
     name: String,
     media_type: Option<MediaType>,
     ports: HashMap<u32, Port>, //Port id to Port
-    pub(super) newly_added: bool,
+    pub(super) position: Option<egui::Pos2>,
 }
 
 impl Node {
@@ -20,7 +20,7 @@ impl Node {
             name,
             media_type,
             ports: HashMap::new(),
-            newly_added: true,
+            position: None,
         }
     }
     pub fn add_port(&mut self, port: Port) {
