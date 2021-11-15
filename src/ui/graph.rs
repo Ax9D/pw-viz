@@ -170,7 +170,7 @@ impl Graph {
         //println!("{:?}", order);
 
         //In debug mode, Ctrl is used to trigger the debug view
-        let debug_view = cfg!(debug_assertions) && ctx.input().modifiers.ctrl;
+        let debug_view = ctx.input().modifiers.ctrl;
 
         let mut ui_nodes = Vec::with_capacity(self.nodes.len());
 
