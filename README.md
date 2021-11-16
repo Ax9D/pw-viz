@@ -11,7 +11,7 @@ This is still a WIP, node layouting is kinda jank at the moment.
 
 # Installation
 
-A compiled binary is available on the [releases page](https://github.com/Ax9D/pw-viz).
+A compiled binary is available on the [releases page](https://github.com/Ax9D/pw-viz/releases).
 
 ## Building from source
 Clone the repo:
