@@ -1,10 +1,12 @@
 [package]
 name = "pw-viz"
 description = "A simple and elegant, pipewire graph editor"
+authors = ["Atri Sarkar <atrisarkar91@gmail.com>"]
 version = "0.1.0"
 keywords = ["pipewire", "graph", "editor", "audio", "patchbay"]
 categories = ["multimedia::audio", "visualization", "gui"]
 repository = "https://github.com/Ax9D/pw-viz"
+readme = "README.md"
 
 edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

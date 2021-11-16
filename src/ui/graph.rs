@@ -167,9 +167,7 @@ impl Graph {
         //Nodes are currently laid out based on this order
         let order = self.topo_sort();
 
-        //println!("{:?}", order);
-
-        //In debug mode, Ctrl is used to trigger the debug view
+        //Ctrl is used to trigger the debug view
         let debug_view = ctx.input().modifiers.ctrl;
 
         let mut ui_nodes = Vec::with_capacity(self.nodes.len());
@@ -221,7 +219,10 @@ impl Graph {
             Self::draw_ports(&mut ui_node, node, theme, debug_view);
 
             ui_nodes.push(ui_node);
+
         }
+
+        println!("\n");
 
         let links = self.links.values().map(|link| {
             (
