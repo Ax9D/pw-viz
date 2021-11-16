@@ -133,9 +133,10 @@ impl Graph {
 
         let mut top_order = Vec::new();
 
+        let mut count = 0;
         while !queue.is_empty() {
             //println!("Queue: {:?}", queue);
-            let u = queue.remove(0);
+            let u = queue.remove(0); //Remove from the front of the queue
 
             top_order.push(u);
 
@@ -153,6 +154,12 @@ impl Graph {
                     }
                 }
             }
+
+            count+=1;
+        }
+
+        if count != self.nodes.len() {
+            log::error!("Cycle detected");
         }
 
         top_order
@@ -175,7 +182,7 @@ impl Graph {
         let mut ui_nodes = Vec::with_capacity(self.nodes.len());
 
         let mut prev_pos= egui::pos2(ui.available_width()/4.0, rand::random::<f32>());
-        let padding = 75.0;
+        let mut padding = egui::pos2(75.0, 85.0);
         for node_id in order {
             let node = self.nodes.get_mut(&node_id).unwrap();
 
@@ -201,12 +208,12 @@ impl Graph {
             // }
 
             let node_position = node.position.unwrap_or_else(|| {
-                egui::pos2(prev_pos.x + padding, rand::random::<f32>() * ui.available_height())
+                padding.y*=-1.0;
+                egui::pos2(prev_pos.x + padding.x, prev_pos.y + padding.y)
             });
+            ui_node.with_origin(node_position);
 
             prev_pos = node_position;
-
-            ui_node.with_origin(node_position);
 
             let media_type = node.media_type();
             let kind = match media_type {
@@ -243,7 +250,7 @@ impl Graph {
         self.nodes_ctx.show(ui_nodes, links, ui);
 
         for (&id, node) in self.nodes.iter_mut() {
-            node.position = self.nodes_ctx.get_node_pos_grid_space(id as usize);
+            node.position = self.nodes_ctx.get_node_pos_screen_space(id as usize);
         }
 
         if let Some(link) = self.nodes_ctx.link_destroyed() {

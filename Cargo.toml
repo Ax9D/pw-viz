@@ -1,6 +1,8 @@
 [package]
 name = "pw-viz"
 description = "A simple and elegant, pipewire graph editor"
+readme = "README.md"
+authors = ["Atri Sarkar <atrisarkar91@gmail.com>"]
 version = "0.1.0"
 edition = "2021"
 repository = "https://github.com/Ax9D/pw-viz"
