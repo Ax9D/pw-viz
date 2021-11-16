@@ -181,7 +181,7 @@ impl Graph {
 
         let mut ui_nodes = Vec::with_capacity(self.nodes.len());
 
-        let mut prev_pos= egui::pos2(ui.available_width()/4.0, rand::random::<f32>());
+        let mut prev_pos= egui::pos2(ui.available_width()/4.0, ui.available_height()/2.0);
         let mut padding = egui::pos2(75.0, 150.0);
         for node_id in order {
             let node = self.nodes.get_mut(&node_id).unwrap();
@@ -238,8 +238,6 @@ impl Graph {
             ui_nodes.push(ui_node);
 
         }
-
-        println!("\n");
 
         let links = self.links.values().map(|link| {
             (

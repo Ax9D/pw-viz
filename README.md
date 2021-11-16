@@ -2,7 +2,7 @@
     <h1>pw-viz</h1>
 <h4> A simple and elegant, pipewire graph editor </h4>
 
-![demo image](demo.png)
+![demo image](assets/demo.png)
 
 </div>
 
@@ -10,6 +10,10 @@
 This is still a WIP, node layouting is kinda jank at the moment.
 
 # Installation
+
+A compiled binary is available on the [releases page](https://github.com/Ax9D/pw-viz).
+
+## Building from source
 Clone the repo:
 ```
 git clone https://github.com/Ax9D/pw-viz
@@ -47,4 +51,4 @@ Pipewire connection code is inspired by helvum's implementation
 [helvum](https://gitlab.freedesktop.org/ryuukyu/helvum): A GTK patchbay for pipewire.
 
 # License
-TODO
+pw-viz is licensed under the terms of the GNU General Public License v3.0. See LICENSE.md for more info.

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=pw-viz
+GenericName=PipeWire Graph Editor
+Type=Application
+Comment=A simple and elegant, pipewire graph editor
+Exec=pw-viz
+
+#Icon=TODO
+
+Terminal=false
+Categories=System;Audio;Settings;
