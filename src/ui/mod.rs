@@ -162,7 +162,7 @@ impl GraphUI {
                     ui.label("Pan the graph");
                     ui.end_row();
 
-                    ui.label("ctrl");
+                    ui.label("Ctrl");
                     ui.label("Show pipewire ids of nodes and ports");
                     ui.end_row();
                 })
