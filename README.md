@@ -11,7 +11,7 @@ This is still a WIP, node layouting is kinda jank at the moment.
 
 # Installation
 
-A compiled binary is available on the [releases page](https://github.com/Ax9D/pw-viz).
+A compiled binary is available on the [releases page](https://github.com/Ax9D/pw-viz/releases).
 
 ## Building from source
 Clone the repo:
@@ -47,8 +47,8 @@ Zooming is not supported currently
 * A modified fork of [egui-nodes](https://github.com/haighcam/egui_nodes): A egui port of [imnodes](https://github.com/Nelarius/imnodes)
 
 # Thanks / Alternatives
-Pipewire connection code is inspired by helvum's implementation
+Pipewire connection code is inspired by helvum's implementation,
 [helvum](https://gitlab.freedesktop.org/ryuukyu/helvum): A GTK patchbay for pipewire.
 
 # License
-pw-viz is licensed under the terms of the GNU General Public License v3.0. See LICENSE.md for more info.
+pw-viz is licensed under the terms of the GNU General Public License v3.0. See LICENSE for more information.
