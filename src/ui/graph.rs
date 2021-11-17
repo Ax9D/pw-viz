@@ -155,7 +155,7 @@ impl Graph {
                 }
             }
 
-            count+=1;
+            count += 1;
         }
 
         if count != self.nodes.len() {
@@ -181,7 +181,7 @@ impl Graph {
 
         let mut ui_nodes = Vec::with_capacity(self.nodes.len());
 
-        let mut prev_pos= egui::pos2(ui.available_width()/4.0, ui.available_height()/2.0);
+        let mut prev_pos = egui::pos2(ui.available_width() / 4.0, ui.available_height() / 2.0);
         let mut padding = egui::pos2(75.0, 150.0);
         for node_id in order {
             let node = self.nodes.get_mut(&node_id).unwrap();
@@ -196,7 +196,6 @@ impl Graph {
                 },
             );
 
-
             // if node.position.is_none() {
 
             //     //Horizontally shift each node to the right of the previous one
@@ -208,7 +207,7 @@ impl Graph {
             // }
 
             let node_position = node.position.unwrap_or_else(|| {
-                padding.y*=-1.0;
+                padding.y *= -1.0;
                 egui::pos2(prev_pos.x + padding.x, prev_pos.y + padding.y)
             });
             ui_node.with_origin(node_position);
@@ -236,7 +235,6 @@ impl Graph {
             Self::draw_ports(&mut ui_node, node, theme, debug_view);
 
             ui_nodes.push(ui_node);
-
         }
 
         let links = self.links.values().map(|link| {

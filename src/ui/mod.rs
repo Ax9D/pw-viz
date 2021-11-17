@@ -77,7 +77,7 @@ impl GraphUI {
             theme: Theme::default(),
             show_theme: false,
             show_about: false,
-            show_controls: false
+            show_controls: false,
         }
     }
     fn theme_window(&mut self, ctx: &egui::CtxRef, _ui: &mut egui::Ui) {
@@ -162,7 +162,7 @@ impl GraphUI {
                     ui.label("Pan the graph");
                     ui.end_row();
 
-                    ui.label("ctrl");
+                    ui.label("Ctrl");
                     ui.label("Show pipewire ids of nodes and ports");
                     ui.end_row();
                 })
