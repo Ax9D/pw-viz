@@ -86,7 +86,6 @@ pub fn thread_main(
     let registry = Rc::new(core.get_registry()?);
     let registry_clone = registry.clone();
 
-    let sender = sender.clone();
     let sender_rm = sender.clone();
 
     let state = Rc::new(RefCell::new(State::new()));
