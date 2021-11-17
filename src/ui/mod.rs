@@ -77,7 +77,7 @@ impl GraphUI {
             theme: Theme::default(),
             show_theme: false,
             show_about: false,
-            show_controls: false
+            show_controls: false,
         }
     }
     fn theme_window(&mut self, ctx: &egui::CtxRef, _ui: &mut egui::Ui) {
