@@ -63,6 +63,7 @@ pub struct GraphUI {
     theme: Theme,
     show_theme: bool,
     show_about: bool,
+    show_controls: bool,
 }
 impl GraphUI {
     pub fn new(
@@ -76,6 +77,7 @@ impl GraphUI {
             theme: Theme::default(),
             show_theme: false,
             show_about: false,
+            show_controls: false
         }
     }
     fn theme_window(&mut self, ctx: &egui::CtxRef, _ui: &mut egui::Ui) {
@@ -141,6 +143,32 @@ impl GraphUI {
                 })
             });
     }
+
+    fn controls_window(&mut self, ctx: &egui::CtxRef, _ui: &mut egui::Ui) {
+        egui::Window::new("Controls")
+            .open(&mut self.show_controls)
+            .resizable(false)
+            .show(ctx, |ui| {
+                egui::Grid::new("theme_grid").show(ui, |ui| {
+                    ui.label("Left Click + Drag");
+                    ui.label("Move nodes, create links between nodes");
+                    ui.end_row();
+
+                    ui.label("Alt + Left Click + Drag");
+                    ui.label("Remove Links");
+                    ui.end_row();
+
+                    ui.label("Middle Mouse + Drag");
+                    ui.label("Pan the graph");
+                    ui.end_row();
+
+                    ui.label("ctrl");
+                    ui.label("Show pipewire ids of nodes and ports");
+                    ui.end_row();
+                })
+            });
+    }
+
     ///Update the graph ui based on the message sent by the pipewire thread
     fn process_message(&mut self, message: PipewireMessage) {
         let _graph = &mut self.graph;
@@ -261,6 +289,9 @@ impl epi::App for GraphUI {
                     if ui.button("About").clicked() {
                         self.show_about = true;
                     }
+                    if ui.button("Controls").clicked() {
+                        self.show_controls = true;
+                    }
                 });
             });
         });
@@ -298,6 +329,9 @@ impl epi::App for GraphUI {
             }
             if self.show_about {
                 self.about_window(ctx, ui);
+            }
+            if self.show_controls {
+                self.controls_window(ctx, ui);
             }
         });
     }
