@@ -9,15 +9,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Failed to init logger");
     }
 
-    //The Ui (main thread) and PipeWire client run on different threads, communication between the threads is facilitated using message passing
-
+    // The UI (main thread) and PipeWire client run on different threads, communication between the threads is facilitated using message passing
     let (sender, receiver) = std::sync::mpsc::channel();
     let (pwsender, pwreciever) = pipewire::channel::channel();
 
-    //Set's up pipewire thread
+    // Set up pipewire thread
     let pw_thread_handle = thread::spawn(move || {
         let sender = Rc::new(sender);
-
         pipewire_impl::thread_main(sender, pwreciever).expect("Failed to init pipewire client");
     });
 

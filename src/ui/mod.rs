@@ -19,16 +19,16 @@ pub const INITIAL_HEIGHT: u32 = 720;
 
 #[derive(Debug)]
 pub enum UiMessage {
-    RemoveLink(u32),
     AddLink {
         from_node: u32,
         to_node: u32,
-
         from_port: u32,
         to_port: u32,
     },
+    RemoveLink(u32),
     Exit,
 }
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Theme {
     titlebar: egui::Color32,
@@ -42,15 +42,19 @@ pub struct Theme {
 
     text_color: egui::Color32,
 }
+
 impl Default for Theme {
     fn default() -> Self {
         Self {
             titlebar: egui::Color32::from_rgba_unmultiplied(78, 107, 181, 255),
             titlebar_hovered: egui::Color32::from_rgba_unmultiplied(112, 127, 192, 255),
+
             audio_port: egui::Color32::from_rgba_unmultiplied(72, 184, 121, 255),
             audio_port_hovered: egui::Color32::from_rgba_unmultiplied(95, 210, 170, 255),
+
             video_port: egui::Color32::from_rgba_unmultiplied(149, 56, 173, 255),
             video_port_hovered: egui::Color32::from_rgba_unmultiplied(148, 96, 182, 255),
+
             text_color: egui::Color32::WHITE,
         }
     }
@@ -65,6 +69,7 @@ pub struct GraphUI {
     show_about: bool,
     show_controls: bool,
 }
+
 impl GraphUI {
     pub fn new(
         pipewire_receiver: Receiver<PipewireMessage>,
@@ -80,6 +85,7 @@ impl GraphUI {
             show_controls: false,
         }
     }
+
     fn theme_window(&mut self, ctx: &egui::CtxRef, _ui: &mut egui::Ui) {
         let theme = &mut self.theme;
         egui::Window::new("Theme")
@@ -124,6 +130,7 @@ impl GraphUI {
                 }
             });
     }
+
     fn about_window(&mut self, ctx: &egui::CtxRef, _ui: &mut egui::Ui) {
         egui::Window::new("About")
             .open(&mut self.show_about)
@@ -169,7 +176,7 @@ impl GraphUI {
             });
     }
 
-    ///Update the graph ui based on the message sent by the pipewire thread
+    /// Update the graph ui based on the message sent by the pipewire thread
     fn process_message(&mut self, message: PipewireMessage) {
         let _graph = &mut self.graph;
 
@@ -179,22 +186,32 @@ impl GraphUI {
                 name,
                 media_type,
             } => {
-                let node = Node::new(id, name, media_type);
-
-                self.graph.add_node(node);
+                self.graph.add_node(Node::new(id, name, media_type));
             }
+            PipewireMessage::NodeRemoved { id } => {
+                self.graph.remove_node(id);
+            }
+
             PipewireMessage::PortAdded {
                 node_id,
                 id,
                 name,
                 port_type,
             } => {
-                let port = Port::new(id, name, port_type);
-
                 self.graph
                     .get_node_mut(node_id)
                     .expect("Port with provided id doesn't exist")
-                    .add_port(port);
+                    .add_port(Port {
+                        id,
+                        name,
+                        port_type,
+                    });
+            }
+            PipewireMessage::PortRemoved { node_id, id } => {
+                self.graph
+                    .get_node_mut(node_id)
+                    .expect("Port with provided id doesn't exist")
+                    .remove_port(id);
             }
 
             PipewireMessage::LinkAdded {
@@ -204,34 +221,23 @@ impl GraphUI {
                 from_port,
                 to_port,
             } => {
-                let link = Link {
+                self.graph.add_link(Link {
                     id,
                     from_node,
                     to_node,
                     from_port,
                     to_port,
                     active: true,
-                };
-
-                self.graph.add_link(link);
-            }
-            PipewireMessage::LinkStateChanged { id: _, active: _ } => {}
-
-            PipewireMessage::NodeRemoved { id } => {
-                self.graph.remove_node(id);
-            }
-            PipewireMessage::PortRemoved { node_id, id } => {
-                self.graph
-                    .get_node_mut(node_id)
-                    .expect("Port with provided id doesn't exist")
-                    .remove_port(id);
+                });
             }
             PipewireMessage::LinkRemoved { id } => {
                 self.graph.remove_link(id);
             }
+            PipewireMessage::LinkStateChanged { id: _, active: _ } => {}
         };
     }
-    ///Keep processing messages in a non blocking way until there aren't any new messages
+
+    /// Keep processing messages in a non blocking way until there aren't any new messages
     fn pump_messages(&mut self) {
         loop {
             match self.pipewire_receiver.try_recv() {
@@ -246,6 +252,7 @@ impl GraphUI {
         }
     }
 }
+
 impl epi::App for GraphUI {
     fn name(&self) -> &str {
         env!("CARGO_PKG_NAME")
@@ -297,7 +304,7 @@ impl epi::App for GraphUI {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            //If any new links were created/removed, notify the pipewire thread
+            // If any new links were created/removed, notify the pipewire thread
             if let Some(link_update) = self.graph.draw(ctx, ui, &self.theme) {
                 match link_update {
                     graph::LinkUpdate::Created {
@@ -310,7 +317,6 @@ impl epi::App for GraphUI {
                             .send(UiMessage::AddLink {
                                 from_port,
                                 to_port,
-
                                 from_node,
                                 to_node,
                             })
@@ -335,6 +341,7 @@ impl epi::App for GraphUI {
             }
         });
     }
+
     fn on_exit(&mut self) {
         self.pipewire_sender
             .send(UiMessage::Exit)
