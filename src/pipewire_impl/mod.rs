@@ -1,7 +1,5 @@
 mod state;
 
-use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::mpsc::Sender};
-
 use pipewire::{
     link::LinkChangeMask,
     prelude::ReadableDict,
@@ -9,10 +7,11 @@ use pipewire::{
     spa::ForeignDict,
     Context, Core, MainLoop,
 };
+use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::mpsc::Sender};
 
 use crate::ui::UiMessage;
+use state::State;
 
-use self::state::State;
 pub enum PipewireMessage {
     NodeAdded {
         id: u32,
@@ -70,7 +69,8 @@ struct ProxyLink {
     proxy: pipewire::link::Link,
     listener: pipewire::link::LinkListener,
 }
-///Pipewire mainloop runs on a separate thread, and notifies the UI thread of any changes using a mpsc channel
+
+/// Pipewire mainloop runs on a separate thread, and notifies the UI thread of any changes using a mpsc channel
 /// thread_main is the entry point of this thread
 pub fn thread_main(
     sender: Rc<Sender<PipewireMessage>>,
@@ -94,7 +94,7 @@ pub fn thread_main(
 
     let _listener = registry
         .add_listener_local()
-        //Called when a global object is added
+        // Called when a global object is added
         .global({
             move |global| match global.type_ {
                 pipewire::types::ObjectType::Node => {
@@ -109,7 +109,7 @@ pub fn thread_main(
                 _ => {}
             }
         })
-        //Called when a global object is removed
+        // Called when a global object is removed
         .global_remove(move |id| match state_rm.borrow_mut().remove(id) {
             Some(object) => {
                 let message = match object {
@@ -131,8 +131,8 @@ pub fn thread_main(
         })
         .register();
 
-    //This thread also receives messages from the ui thread to update the pipewire graph
-    //Messages are sent on a special pipewire channel which needs to be registered with the main loop
+    // This thread also receives messages from the ui thread to update the pipewire graph
+    // Messages are sent on a special pipewire channel which needs to be registered with the main loop
     let _receiver = receiver.attach(&mainloop, {
         let state = state_rm_link;
         let mainloop = mainloop.clone();
@@ -245,29 +245,25 @@ fn handle_link(
         .borrow_mut()
         .insert(link.id, ProxyLink { proxy, listener });
 }
+
 fn add_link(from_port: u32, to_port: u32, from_node: u32, to_node: u32, core: &Rc<Core>) {
     core.create_object::<pipewire::link::Link, _>(
         "link-factory",
         &pipewire::properties! {
             "link.input.port" => to_port.to_string(),
             "link.output.port" => from_port.to_string(),
-
             "link.input.node" => to_node.to_string(),
             "link.output.node"=> from_node.to_string(),
-
             "object.linger" => "1"
-
         },
     )
     .expect("Failed to add new link");
 }
-fn remove_link(link_id: u32, state: &Rc<RefCell<State>>, registry: &Rc<Registry>) {
-    let state = state.borrow_mut();
 
-    if let Some(&state::GlobalObject::Link) = state.get(link_id) {
-        match registry.destroy_global(link_id).into_result() {
-            Ok(_) => {}
-            Err(err) => log::error!("SPA error: {}", err),
+fn remove_link(link_id: u32, state: &Rc<RefCell<State>>, registry: &Rc<Registry>) {
+    if let Some(&state::GlobalObject::Link) = state.borrow_mut().get(link_id) {
+        if let Err(err) = registry.destroy_global(link_id).into_result() {
+            log::error!("SPA error: {}", err)
         }
     } else {
         log::warn!("Tried to destroy unregistered object with id: {}", link_id);
