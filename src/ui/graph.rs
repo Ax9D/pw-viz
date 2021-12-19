@@ -235,6 +235,14 @@ impl Graph {
         });
 
         self.nodes_ctx.show(ui_nodes, links, ui);
+        egui::TopBottomPanel::bottom("control_hints").show_inside(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("[MMB] Move canvas");
+                ui.label("[LMB] Move node");
+                ui.label("[LMB] Connect port");
+                ui.label("[ALT]+[LMB] Disconnect port");
+            })
+        });
 
         for (&id, node) in self.nodes.iter_mut() {
             node.position = self.nodes_ctx.get_node_pos_screen_space(id as usize);
