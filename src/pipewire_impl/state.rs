@@ -1,9 +1,15 @@
 use std::collections::HashMap;
 
 pub enum GlobalObject {
-    Node,
+    Node {
+        name: String,
+    },
     Link,
-    Port { node_id: u32, id: u32 },
+    Port {
+        node_name: String,
+        node_id: u32,
+        id: u32,
+    },
 }
 
 /// For internal state tracking, this has to be done because pipewire only provides ids of the objects it removes,

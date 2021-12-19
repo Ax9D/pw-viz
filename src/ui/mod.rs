@@ -1,4 +1,5 @@
 mod graph;
+mod id;
 mod link;
 mod node;
 mod port;
@@ -10,8 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Receiver;
 
 use graph::Graph;
-use link::Link;
-use node::Node;
+use id::Id;
 use port::Port;
 
 pub const INITIAL_WIDTH: u32 = 1280;
@@ -19,13 +19,8 @@ pub const INITIAL_HEIGHT: u32 = 720;
 
 #[derive(Debug)]
 pub enum UiMessage {
-    AddLink {
-        from_node: u32,
-        to_node: u32,
-        from_port: u32,
-        to_port: u32,
-    },
     RemoveLink(u32),
+    AddLink { from_port: u32, to_port: u32 },
     Exit,
 }
 
@@ -41,6 +36,9 @@ pub struct Theme {
     video_port_hovered: egui::Color32,
 
     text_color: egui::Color32,
+
+    node_background: egui::Color32,
+    node_background_hovered: egui::Color32,
 }
 
 impl Default for Theme {
@@ -56,6 +54,8 @@ impl Default for Theme {
             video_port_hovered: egui::Color32::from_rgba_unmultiplied(148, 96, 182, 255),
 
             text_color: egui::Color32::WHITE,
+            node_background: egui::Color32::from_rgba_unmultiplied(50, 50, 50, 255),
+            node_background_hovered: egui::Color32::from_rgba_unmultiplied(75, 75, 75, 255),
         }
     }
 }
@@ -117,6 +117,14 @@ impl GraphUI {
                     ui.color_edit_button_srgba(&mut theme.video_port_hovered);
                     ui.end_row();
 
+                    ui.label("Node background");
+                    ui.color_edit_button_srgba(&mut theme.node_background);
+                    ui.end_row();
+
+                    ui.label("Node background hovered");
+                    ui.color_edit_button_srgba(&mut theme.node_background_hovered);
+                    ui.end_row();
+
                     ui.label("Text color");
                     ui.color_edit_button_srgba(&mut theme.text_color);
                     ui.end_row();
@@ -136,7 +144,7 @@ impl GraphUI {
             .open(&mut self.show_about)
             .resizable(false)
             .show(ctx, |ui| {
-                egui::Grid::new("theme_grid").show(ui, |ui| {
+                egui::Grid::new("about_grid").show(ui, |ui| {
                     ui.label(env!("CARGO_PKG_NAME"));
                     ui.end_row();
 
@@ -144,8 +152,8 @@ impl GraphUI {
                     ui.label(env!("CARGO_PKG_VERSION"));
                     ui.end_row();
 
-                    ui.label("Author:");
-                    ui.hyperlink("https://github.com/Ax9D");
+                    ui.label("Project page");
+                    ui.hyperlink("https://github.com/Ax9D/pw-viz");
                     ui.end_row();
                 })
             });
@@ -156,7 +164,7 @@ impl GraphUI {
             .open(&mut self.show_controls)
             .resizable(false)
             .show(ctx, |ui| {
-                egui::Grid::new("theme_grid").show(ui, |ui| {
+                egui::Grid::new("controls_grid").show(ui, |ui| {
                     ui.label("Left Click + Drag");
                     ui.label("Move nodes, create links between nodes");
                     ui.end_row();
@@ -178,57 +186,47 @@ impl GraphUI {
 
     /// Update the graph ui based on the message sent by the pipewire thread
     fn process_message(&mut self, message: PipewireMessage) {
-        let _graph = &mut self.graph;
-
         match message {
             PipewireMessage::NodeAdded {
                 id,
                 name,
+                description,
                 media_type,
             } => {
-                self.graph.add_node(Node::new(id, name, media_type));
+                self.graph.add_node(name, id, description, media_type);
             }
-            PipewireMessage::NodeRemoved { id } => {
-                self.graph.remove_node(id);
+            PipewireMessage::NodeRemoved { name, id } => {
+                self.graph.remove_node(&name, id);
             }
 
             PipewireMessage::PortAdded {
+                node_name,
                 node_id,
                 id,
                 name,
                 port_type,
             } => {
-                self.graph
-                    .get_node_mut(node_id)
-                    .expect("Port with provided id doesn't exist")
-                    .add_port(Port {
-                        id,
-                        name,
-                        port_type,
-                    });
-            }
-            PipewireMessage::PortRemoved { node_id, id } => {
-                self.graph
-                    .get_node_mut(node_id)
-                    .expect("Port with provided id doesn't exist")
-                    .remove_port(id);
+                let port = Port::new(id, name, port_type);
+
+                self.graph.add_port(node_name, node_id, port);
             }
 
             PipewireMessage::LinkAdded {
                 id,
-                from_node,
-                to_node,
+                from_node_name,
+                to_node_name,
                 from_port,
                 to_port,
             } => {
-                self.graph.add_link(Link {
-                    id,
-                    from_node,
-                    to_node,
-                    from_port,
-                    to_port,
-                    active: true,
-                });
+                self.graph
+                    .add_link(id, from_node_name, to_node_name, from_port, to_port);
+            }
+            PipewireMessage::PortRemoved {
+                node_name,
+                node_id,
+                id,
+            } => {
+                self.graph.remove_port(&node_name, node_id, id);
             }
             PipewireMessage::LinkRemoved { id } => {
                 self.graph.remove_link(id);
@@ -293,11 +291,11 @@ impl epi::App for GraphUI {
                     }
                 });
                 egui::menu::menu(ui, "Help", |ui| {
-                    if ui.button("About").clicked() {
-                        self.show_about = true;
-                    }
                     if ui.button("Controls").clicked() {
                         self.show_controls = true;
+                    }
+                    if ui.button("About").clicked() {
+                        self.show_about = true;
                     }
                 });
             });
@@ -310,16 +308,11 @@ impl epi::App for GraphUI {
                     graph::LinkUpdate::Created {
                         from_port,
                         to_port,
-                        from_node,
-                        to_node,
+                        from_node: _,
+                        to_node: _,
                     } => {
                         self.pipewire_sender
-                            .send(UiMessage::AddLink {
-                                from_port,
-                                to_port,
-                                from_node,
-                                to_node,
-                            })
+                            .send(UiMessage::AddLink { from_port, to_port })
                             .expect("Failed to send ui message");
                     }
                     graph::LinkUpdate::Removed(link_id) => {
