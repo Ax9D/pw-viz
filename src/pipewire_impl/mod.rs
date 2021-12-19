@@ -16,9 +16,11 @@ pub enum PipewireMessage {
     NodeAdded {
         id: u32,
         name: String,
+        description: Option<String>,
         media_type: Option<MediaType>,
     },
     PortAdded {
+        node_name: String,
         node_id: u32,
         id: u32,
         name: String,
@@ -26,8 +28,8 @@ pub enum PipewireMessage {
     },
     LinkAdded {
         id: u32,
-        from_node: u32,
-        to_node: u32,
+        from_node_name: String,
+        to_node_name: String,
 
         from_port: u32,
         to_port: u32,
@@ -37,9 +39,11 @@ pub enum PipewireMessage {
         active: bool,
     },
     NodeRemoved {
+        name: String,
         id: u32,
     },
     PortRemoved {
+        node_name: String,
         node_id: u32,
         id: u32,
     },
@@ -113,11 +117,17 @@ pub fn thread_main(
         .global_remove(move |id| match state_rm.borrow_mut().remove(id) {
             Some(object) => {
                 let message = match object {
-                    state::GlobalObject::Node => PipewireMessage::NodeRemoved { id },
+                    state::GlobalObject::Node { name } => PipewireMessage::NodeRemoved { name, id },
                     state::GlobalObject::Link => PipewireMessage::LinkRemoved { id },
-                    state::GlobalObject::Port { node_id, id } => {
-                        PipewireMessage::PortRemoved { node_id, id }
-                    }
+                    state::GlobalObject::Port {
+                        node_name,
+                        node_id,
+                        id,
+                    } => PipewireMessage::PortRemoved {
+                        node_name,
+                        node_id,
+                        id,
+                    },
                 };
                 sender_rm
                     .send(message)
@@ -141,12 +151,9 @@ pub fn thread_main(
             UiMessage::RemoveLink(link_id) => {
                 remove_link(link_id, &state, &registry);
             }
-            UiMessage::AddLink {
-                from_node,
-                to_node,
-                from_port,
-                to_port,
-            } => add_link(from_port, to_port, from_node, to_node, &core),
+            UiMessage::AddLink { from_port, to_port } => {
+                add_link(&state, from_port, to_port, &core)
+            }
             UiMessage::Exit => mainloop.quit(),
         }
     });
@@ -166,9 +173,11 @@ fn handle_node(
         .as_ref()
         .expect("Node object doesn't have properties");
 
+    let description = props.get("node.description");
+
     let name = props
         .get("node.nick")
-        .or_else(|| props.get("node.description"))
+        .or(description)
         .or_else(|| props.get("node.name"))
         .unwrap_or_default()
         .to_string();
@@ -185,12 +194,16 @@ fn handle_node(
         }
     });
 
-    state.borrow_mut().add(node.id, state::GlobalObject::Node);
+    state
+        .borrow_mut()
+        .add(node.id, state::GlobalObject::Node { name: name.clone() });
 
+    let description = description.map(|desc| desc.to_string());
     sender
         .send(PipewireMessage::NodeAdded {
             id: node.id,
             name,
+            description,
             media_type,
         })
         .expect("Failed to send pipewire message");
@@ -219,6 +232,16 @@ fn handle_link(
             let to_port = info.input_port_id();
 
             let mut state = state.borrow_mut();
+
+            let from_node_name = match state.get(from_node).expect("Id wasn't registered") {
+                state::GlobalObject::Node { name } => name.clone(),
+                _ => unreachable!(),
+            };
+            let to_node_name = match state.get(to_node).expect("Id wasn't registered") {
+                state::GlobalObject::Node { name } => name.clone(),
+                _ => unreachable!(),
+            };
+
             if let Some(&state::GlobalObject::Link) = state.get(id) {
                 if info.change_mask().contains(LinkChangeMask::STATE) {
                     sender
@@ -230,8 +253,8 @@ fn handle_link(
                 log::debug!("New pipewire link was added : {}", id);
                 sender
                     .send(PipewireMessage::LinkAdded {
-                        from_node,
-                        to_node,
+                        from_node_name,
+                        to_node_name,
                         from_port,
                         to_port,
                         id,
@@ -245,8 +268,32 @@ fn handle_link(
         .borrow_mut()
         .insert(link.id, ProxyLink { proxy, listener });
 }
+fn add_link(state: &Rc<RefCell<State>>, from_port: u32, to_port: u32, core: &Rc<Core>) {
+    let state = state.borrow();
+    let from_port_ob = state
+        .get(from_port)
+        .expect(&format!("Port with id {} was never registered", from_port));
+    let from_node = *match from_port_ob {
+        state::GlobalObject::Port {
+            node_name: _,
+            node_id,
+            id: _,
+        } => node_id,
+        _ => unreachable!(),
+    };
 
-fn add_link(from_port: u32, to_port: u32, from_node: u32, to_node: u32, core: &Rc<Core>) {
+    let to_port_ob = state
+        .get(to_port)
+        .expect(&format!("Port with id {} was never registered", to_port));
+    let to_node = *match to_port_ob {
+        state::GlobalObject::Port {
+            node_name: _,
+            node_id,
+            id: _,
+        } => node_id,
+        _ => unreachable!(),
+    };
+
     core.create_object::<pipewire::link::Link, _>(
         "link-factory",
         &pipewire::properties! {
@@ -288,15 +335,29 @@ fn handle_port(
         .parse::<u32>()
         .expect("Couldn't parse node.id as u32");
 
+    let mut state = state.borrow_mut();
+
+    let node_name = match state
+        .get(node_id)
+        .expect(&format!("Node with id {} was never registered", node_id))
+    {
+        state::GlobalObject::Node { name } => name,
+        _ => {
+            unreachable!()
+        }
+    }
+    .clone();
+
     let port_type = match props.get("port.direction") {
         Some("in") => PortType::Input,
         Some("out") => PortType::Output,
         _ => PortType::Unknown,
     };
 
-    state.borrow_mut().add(
+    state.add(
         port.id,
         state::GlobalObject::Port {
+            node_name: node_name.clone(),
             node_id,
             id: port.id,
         },
@@ -304,6 +365,7 @@ fn handle_port(
 
     sender
         .send(PipewireMessage::PortAdded {
+            node_name,
             node_id,
             id: port.id,
             name,
