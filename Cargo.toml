@@ -19,9 +19,9 @@ log = {version = "0.4.14", features = ["release_max_level_warn"] }
 simple_logger = "1.13.0"
 
 # egui stuff
-eframe = { version = "0.15.0", features = ["persistence"] }
-egui = "0.15.0"
-egui_nodes = {git = "https://github.com/Ax9D/egui_nodes", rev="3544d61"}
+eframe = { version = "0.16.0", features = ["persistence"] }
+egui = "0.16.0"
+egui_nodes = {git = "https://github.com/Ax9D/egui_nodes", rev="3486734"}
 serde = { version = "1", features = ["derive"] }
 
 [profile.release]

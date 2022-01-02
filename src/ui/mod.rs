@@ -260,7 +260,7 @@ impl epi::App for GraphUI {
     fn setup(
         &mut self,
         _ctx: &egui::CtxRef,
-        _frame: &mut epi::Frame<'_>,
+        _frame: &epi::Frame,
         storage: Option<&dyn epi::Storage>,
     ) {
         if let Some(storage) = storage {
@@ -275,22 +275,22 @@ impl epi::App for GraphUI {
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
+    fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
         self.pump_messages();
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                egui::menu::menu(ui, "File", |ui| {
+                egui::menu::menu_button(ui, "File", |ui| {
                     if ui.button("Quit").clicked() {
                         frame.quit();
                     }
                 });
-                egui::menu::menu(ui, "Settings", |ui| {
+                egui::menu::menu_button(ui, "Settings", |ui| {
                     if ui.button("Theme").clicked() {
                         self.show_theme = true;
                     }
                 });
-                egui::menu::menu(ui, "Help", |ui| {
+                egui::menu::menu_button(ui, "Help", |ui| {
                     if ui.button("Controls").clicked() {
                         self.show_controls = true;
                     }
