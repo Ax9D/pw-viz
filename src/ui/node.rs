@@ -86,7 +86,7 @@ impl Node {
             let (background, hovered) = match &node.media_type {
                 Some(MediaType::Audio) => (theme.audio_port, theme.audio_port_hovered),
                 Some(MediaType::Video) => (theme.video_port, theme.video_port_hovered),
-                Some(MediaType::Midi) => (egui::Color32::RED, egui::Color32::LIGHT_RED),
+                Some(MediaType::Midi) => (theme.midi_port, theme.midi_port_hovered),
                 None => (egui::Color32::GRAY, egui::Color32::LIGHT_GRAY),
             };
             let port_name = {
