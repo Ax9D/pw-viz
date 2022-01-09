@@ -35,6 +35,9 @@ pub struct Theme {
     video_port: egui::Color32,
     video_port_hovered: egui::Color32,
 
+    midi_port: egui::Color32,
+    midi_port_hovered: egui::Color32,
+
     text_color: egui::Color32,
 
     node_background: egui::Color32,
@@ -52,6 +55,9 @@ impl Default for Theme {
 
             video_port: egui::Color32::from_rgba_unmultiplied(149, 56, 173, 255),
             video_port_hovered: egui::Color32::from_rgba_unmultiplied(148, 96, 182, 255),
+
+            midi_port: egui::Color32::RED,
+            midi_port_hovered: egui::Color32::LIGHT_RED,
 
             text_color: egui::Color32::WHITE,
             node_background: egui::Color32::from_rgba_unmultiplied(50, 50, 50, 255),
@@ -115,6 +121,14 @@ impl GraphUI {
 
                     ui.label("Video port hovered");
                     ui.color_edit_button_srgba(&mut theme.video_port_hovered);
+                    ui.end_row();
+
+                    ui.label("MIDI port");
+                    ui.color_edit_button_srgba(&mut theme.midi_port);
+                    ui.end_row();
+
+                    ui.label("MIDI port hovered");
+                    ui.color_edit_button_srgba(&mut theme.midi_port_hovered);
                     ui.end_row();
 
                     ui.label("Node background");
