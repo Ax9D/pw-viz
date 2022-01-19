@@ -33,7 +33,7 @@ pacman -S pipewire pkg-config clang libxcb
 #### Fedora
 
 ```bash
-dnf install pipewire pipewire-devel clang libxcb-devel
+sudo dnf install pipewire pipewire-devel clang libxcb-devel
 ```
 
 #### Other
