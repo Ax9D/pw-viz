@@ -23,6 +23,21 @@ Alternatively, you can clone the main branch, although its NOT guaranteed to be 
 ```
 git clone https://github.com/Ax9D/pw-viz
 ```
+### Dependencies
+You'll need a few dependencies installed on your system depending on your distro to build pw-viz.
+
+#### Arch
+```bash
+pacman -S pipewire pkg-config clang libxcb
+```
+#### Fedora
+
+```bash
+dnf install pipewire pipewire-devel clang libxcb-devel
+```
+
+#### Other
+If you are building on another distro, you can help fill in this section by opening a pull request.
 
 ### Build
 Next, `cd` into your source folder and then start the build using:
@@ -30,7 +45,7 @@ Next, `cd` into your source folder and then start the build using:
 cargo build --release
 ```
 
-Next you can copy the resulting binary(pw-viz) which will be found inside ```target/release``` to a directory in your ```$PATH```, like  ```/usr/bin/```
+Then you can copy the resulting binary(pw-viz) which will be found inside ```target/release``` to a directory in your ```$PATH```, like  ```/usr/bin/```
 
 # Controls
 
