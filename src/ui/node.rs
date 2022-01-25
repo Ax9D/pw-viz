@@ -79,8 +79,8 @@ impl Node {
     ) {
         let mut ports = node.ports.values().collect::<Vec<_>>();
 
-        //Sorts ports based on alphabetical ordering
-        ports.sort_by(|a, b| a.name().cmp(b.name()));
+        //Sorts ports based on natural ordering
+        ports.sort_by(|a, b| natord::compare(a.name(), b.name()));
 
         for (ix, port) in ports.iter().enumerate() {
             let (background, hovered) = match &node.media_type {

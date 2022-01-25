@@ -17,6 +17,7 @@ pipewire = "0.4.1"
 rand = "0.8.4"
 log = {version = "0.4.14", features = ["release_max_level_warn"] }
 simple_logger = "1.13.0"
+natord = "1.0.9"
 
 # egui stuff
 eframe = { version = "0.16.0", features = ["persistence"] }

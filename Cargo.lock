@@ -575,7 +575,7 @@ dependencies = [
 [[package]]
 name = "egui_nodes"
 version = "0.1.3"
-source = "git+https://github.com/Ax9D/egui_nodes?rev=3486734#34867348e5ea12dbc1a7be04056189900d53389e"
+source = "git+https://github.com/Ax9D/egui_nodes?rev=584047e#584047e53bc3b8693457ec00d7d9479a839d7ced"
 dependencies = [
  "derivative",
  "egui",
@@ -1054,6 +1054,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "natord"
+version = "1.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "308d96db8debc727c3fd9744aac51751243420e46edf401010908da7f8d5e57c"
+
+[[package]]
 name = "ndk"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1369,6 +1375,7 @@ dependencies = [
  "egui",
  "egui_nodes",
  "log",
+ "natord",
  "pipewire",
  "rand",
  "serde",
