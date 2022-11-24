@@ -1,5 +1,6 @@
-use egui_nodes::{NodeConstructor, PinArgs};
 use std::collections::HashMap;
+
+use egui_nodes::{NodeConstructor, PinArgs};
 
 use crate::pipewire_impl::MediaType;
 
@@ -118,8 +119,9 @@ impl Node {
                                 ..Default::default()
                             },
                             move |ui| {
-                                ui.label(
-                                    egui::RichText::new(node_desc).color(egui::Color32::WHITE),
+                                ui.colored_label(
+                                    egui::Color32::WHITE,
+                                    node_desc,
                                 );
                                 ui.label(port_name)
                             },
@@ -146,8 +148,9 @@ impl Node {
                                 ..Default::default()
                             },
                             move |ui| {
-                                ui.label(
-                                    egui::RichText::new(node_desc).color(egui::Color32::WHITE),
+                                ui.colored_label(
+                                    egui::Color32::WHITE,
+                                    node_desc,
                                 );
                                 ui.label(port_name)
                             },
@@ -197,13 +200,7 @@ impl Node {
         }
 
         ui_node.with_title(move |ui| {
-            ui.label(
-                egui::RichText::new(format!("{} {}", self.name(), media_type))
-                    .color(theme.text_color),
-            )
-            // egui::Label::new(&format!("{} {}", self.name(), media_type))
-            //     .text_color(theme.text_color)
-            //     .ui(ui)
+            ui.colored_label(theme.text_color, &format!("{} {}", self.name(), media_type))
         });
 
         for node in self.pw_nodes.iter() {

@@ -5,7 +5,7 @@ mod node;
 mod port;
 
 use crate::pipewire_impl::PipewireMessage;
-use eframe::epi;
+
 use pipewire::channel::Sender;
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Receiver;
@@ -92,7 +92,7 @@ impl GraphUI {
         }
     }
 
-    fn theme_window(&mut self, ctx: &egui::CtxRef, _ui: &mut egui::Ui) {
+    fn theme_window(&mut self, ctx: &egui::Context, _ui: &mut egui::Ui) {
         let theme = &mut self.theme;
         egui::Window::new("Theme")
             .open(&mut self.show_theme)
@@ -153,7 +153,7 @@ impl GraphUI {
             });
     }
 
-    fn about_window(&mut self, ctx: &egui::CtxRef, _ui: &mut egui::Ui) {
+    fn about_window(&mut self, ctx: &egui::Context, _ui: &mut egui::Ui) {
         egui::Window::new("About")
             .open(&mut self.show_about)
             .resizable(false)
@@ -173,7 +173,7 @@ impl GraphUI {
             });
     }
 
-    fn controls_window(&mut self, ctx: &egui::CtxRef, _ui: &mut egui::Ui) {
+    fn controls_window(&mut self, ctx: &egui::Context, _ui: &mut egui::Ui) {
         egui::Window::new("Controls")
             .open(&mut self.show_controls)
             .resizable(false)
@@ -265,38 +265,34 @@ impl GraphUI {
     }
 }
 
-impl epi::App for GraphUI {
-    fn name(&self) -> &str {
-        env!("CARGO_PKG_NAME")
-    }
-
-    /// Called once before the first frame.
-    fn setup(
-        &mut self,
-        _ctx: &egui::CtxRef,
-        _frame: &epi::Frame,
-        storage: Option<&dyn epi::Storage>,
-    ) {
-        if let Some(storage) = storage {
-            self.theme = epi::get_value(storage, "theme").unwrap_or_default();
-        }
-    }
+impl eframe::App for GraphUI {
+    // /// Called once before the first frame.
+    // fn setup(
+    //     &mut self,
+    //     _ctx: &egui::Context,
+    //     _frame: &mut epi::Frame<'_>,
+    //     storage: Option<&dyn eframe::Storage>,
+    // ) {
+    //     if let Some(storage) = storage {
+    //         self.theme = epi::get_value(storage, "theme").unwrap_or_default();
+    //     }
+    // }
 
     /// Called by the frame work to save state before shutdown.
     /// Note that you must enable the `persistence` feature for this to work.
-    fn save(&mut self, storage: &mut dyn epi::Storage) {
-        epi::set_value(storage, "theme", &self.theme);
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, "theme", &self.theme);
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.pump_messages();
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 egui::menu::menu_button(ui, "File", |ui| {
                     if ui.button("Quit").clicked() {
-                        frame.quit();
+                        frame.close();
                     }
                 });
                 egui::menu::menu_button(ui, "Settings", |ui| {
@@ -346,23 +342,46 @@ impl epi::App for GraphUI {
             if self.show_controls {
                 self.controls_window(ctx, ui);
             }
+
+            egui::TopBottomPanel::bottom("control_hints").show_inside(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("[MMB] Move canvas");
+                    ui.label("[LMB] Move node");
+                    ui.label("[LMB] Connect port");
+                    ui.label("[ALT]+[LMB] Disconnect port");
+                })
+            });
         });
     }
 
-    fn on_exit(&mut self) {
+    fn on_close_event(&mut self) -> bool {
         self.pipewire_sender
             .send(UiMessage::Exit)
             .expect("Failed to send ui message");
+
+        true
     }
 }
 
+fn create_app(cc: &eframe::CreationContext, reciever: Receiver<PipewireMessage>, sender: Sender<UiMessage>) -> Box<dyn eframe::App> {
+    let mut graph = GraphUI::new(reciever, sender);
+
+    //Load theme config
+    if let Some(storage) = cc.storage {
+        graph.theme = eframe::get_value(storage, "theme").unwrap_or_default();
+    }
+
+    Box::new(graph)
+}
 pub fn run_graph_ui(receiver: Receiver<PipewireMessage>, sender: Sender<UiMessage>) {
     let initial_window_size = egui::vec2(INITIAL_WIDTH as f32, INITIAL_HEIGHT as f32);
+
     eframe::run_native(
-        Box::new(GraphUI::new(receiver, sender)),
+        env!("CARGO_PKG_NAME"),
         eframe::NativeOptions {
             initial_window_size: Some(initial_window_size),
             ..Default::default()
         },
+        Box::new(|cc| create_app(cc, receiver, sender)),
     );
 }
