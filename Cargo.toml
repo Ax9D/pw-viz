@@ -2,7 +2,7 @@
 name = "pw-viz"
 description = "A simple and elegant, pipewire graph editor"
 authors = ["Atri Sarkar <atrisarkar91@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 keywords = ["pipewire", "graph", "editor", "audio", "patchbay"]
 categories = ["multimedia::audio", "visualization", "gui"]
 
