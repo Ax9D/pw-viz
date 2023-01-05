@@ -13,16 +13,16 @@ license = "GPL-3.0-only"
 edition = "2021"
 
 [dependencies]
-pipewire = "0.4.1"
-rand = "0.8.4"
-log = {version = "0.4.14", features = ["release_max_level_warn"] }
-simple_logger = "1.13.0"
-natord = "1.0.9"
+pipewire = "0.5"
+rand = "0.8"
+log = {version = "0.4", features = ["release_max_level_warn"] }
+simple_logger = "4"
+natord = "1"
 
 # egui stuff
-eframe = { version = "0.16.0", features = ["persistence"] }
-egui = "0.16.0"
-egui_nodes = {git = "https://github.com/Ax9D/egui_nodes", rev="584047e"}
+eframe = { version = "0.20", features = ["persistence"] }
+egui = "0.20"
+egui_nodes = {git = "https://github.com/Ax9D/egui_nodes", rev="27167e4"}
 serde = { version = "1", features = ["derive"] }
 
 [profile.release]
