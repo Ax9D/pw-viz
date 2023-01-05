@@ -12,6 +12,7 @@ license = "GPL-3.0-only"
 
 edition = "2021"
 
+
 [dependencies]
 pipewire = "0.5"
 rand = "0.8"
@@ -27,3 +28,4 @@ serde = { version = "1", features = ["derive"] }
 
 [profile.release]
 lto = true
+strip = true
