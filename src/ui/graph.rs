@@ -194,7 +194,7 @@ impl Graph {
     }
     pub fn draw<'graph, 'ui>(
         &'graph mut self,
-        ctx: &'ui egui::CtxRef,
+        ctx: &'ui egui::Context,
         ui: &'ui mut egui::Ui,
         theme: &'ui Theme,
     ) -> Option<LinkUpdate> {
@@ -246,14 +246,6 @@ impl Graph {
         });
 
         self.nodes_ctx.show(ui_nodes, links, ui);
-        egui::TopBottomPanel::bottom("control_hints").show_inside(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.label("[MMB] Move canvas");
-                ui.label("[LMB] Move node");
-                ui.label("[LMB] Connect port");
-                ui.label("[ALT]+[LMB] Disconnect port");
-            })
-        });
 
         let mut prev_pos = egui::pos2(ui.available_width() / 4.0, ui.available_height() / 2.0);
         let mut padding = egui::pos2(75.0, 150.0);

@@ -8,7 +8,7 @@ pub struct Id(u64);
 
 impl Id {
     pub fn new(data: impl Hash) -> Self {
-        let mut hasher = AHasher::new_with_keys(123, 456);
+        let mut hasher = AHasher::default();
         data.hash(&mut hasher);
         Id(hasher.finish())
     }
