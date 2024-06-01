@@ -119,10 +119,7 @@ impl Node {
                                 ..Default::default()
                             },
                             move |ui| {
-                                ui.colored_label(
-                                    egui::Color32::WHITE,
-                                    node_desc,
-                                );
+                                ui.colored_label(egui::Color32::WHITE, node_desc);
                                 ui.label(port_name)
                             },
                         );
@@ -148,10 +145,7 @@ impl Node {
                                 ..Default::default()
                             },
                             move |ui| {
-                                ui.colored_label(
-                                    egui::Color32::WHITE,
-                                    node_desc,
-                                );
+                                ui.colored_label(egui::Color32::WHITE, node_desc);
                                 ui.label(port_name)
                             },
                         );

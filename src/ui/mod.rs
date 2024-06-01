@@ -363,7 +363,11 @@ impl eframe::App for GraphUI {
     }
 }
 
-fn create_app(cc: &eframe::CreationContext, reciever: Receiver<PipewireMessage>, sender: Sender<UiMessage>) -> Box<dyn eframe::App> {
+fn create_app(
+    cc: &eframe::CreationContext,
+    reciever: Receiver<PipewireMessage>,
+    sender: Sender<UiMessage>,
+) -> Box<dyn eframe::App> {
     let mut graph = GraphUI::new(reciever, sender);
 
     //Load theme config

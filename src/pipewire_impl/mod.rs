@@ -1,11 +1,12 @@
 mod state;
 
 use pipewire::{
+    context::Context,
+    core::Core,
     link::LinkChangeMask,
-    prelude::ReadableDict,
+    main_loop::MainLoop,
     registry::{GlobalObject, Registry},
-    spa::ForeignDict,
-    Context, Core, MainLoop,
+    spa::utils::dict::DictRef,
 };
 use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::mpsc::Sender};
 
@@ -80,7 +81,7 @@ pub fn thread_main(
     sender: Rc<Sender<PipewireMessage>>,
     receiver: pipewire::channel::Receiver<UiMessage>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mainloop = MainLoop::new()?;
+    let mainloop = MainLoop::new(None)?;
     let context = Context::new(&mainloop)?;
     let core = Rc::new(context.connect(None)?);
 
@@ -143,7 +144,7 @@ pub fn thread_main(
 
     // This thread also receives messages from the ui thread to update the pipewire graph
     // Messages are sent on a special pipewire channel which needs to be registered with the main loop
-    let _receiver = receiver.attach(&mainloop, {
+    let _receiver = receiver.attach(mainloop.loop_(), {
         let state = state_rm_link;
         let mainloop = mainloop.clone();
 
@@ -164,7 +165,7 @@ pub fn thread_main(
 }
 
 fn handle_node(
-    node: &GlobalObject<ForeignDict>,
+    node: &GlobalObject<&DictRef>,
     state: &Rc<RefCell<State>>,
     sender: &Rc<Sender<PipewireMessage>>,
 ) {
@@ -210,7 +211,7 @@ fn handle_node(
 }
 
 fn handle_link(
-    link: &GlobalObject<ForeignDict>,
+    link: &GlobalObject<&DictRef>,
     state: &Rc<RefCell<State>>,
     sender: &Rc<Sender<PipewireMessage>>,
     registry: &Rc<Registry>,
@@ -294,9 +295,9 @@ fn add_link(state: &Rc<RefCell<State>>, from_port: u32, to_port: u32, core: &Rc<
         _ => unreachable!(),
     };
 
-    core.create_object::<pipewire::link::Link, _>(
+    core.create_object::<pipewire::link::Link>(
         "link-factory",
-        &pipewire::properties! {
+        &pipewire::properties::properties! {
             "link.input.port" => to_port.to_string(),
             "link.output.port" => from_port.to_string(),
             "link.input.node" => to_node.to_string(),
@@ -318,7 +319,7 @@ fn remove_link(link_id: u32, state: &Rc<RefCell<State>>, registry: &Rc<Registry>
 }
 
 fn handle_port(
-    port: &GlobalObject<ForeignDict>,
+    port: &GlobalObject<&DictRef>,
     state: &Rc<RefCell<State>>,
     sender: &Rc<Sender<PipewireMessage>>,
 ) {
