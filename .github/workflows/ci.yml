@@ -1,0 +1,89 @@
+name: Continuous Integration
+# execute on pull requests and push on main branch
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+#   rustfmt:
+#     name: Runs rustfmt
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Install latest stable
+#         uses: actions-rs/toolchain@v1
+#         with:
+#             toolchain: stable
+#             override: true
+#             components: rustfmt, clippy
+
+#       - name: Check formatting
+#         uses: actions-rs/cargo@v1
+#         with:
+#           command: fmt
+#           args: --all -- --check
+  
+  # build:
+  #   name: Build test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Install pipewire
+  #       run: sudo add-apt-repository ppa:pipewire-debian/pipewire-upstream; sudo apt install xvfb gstreamer1.0-pipewire libpipewire-0.3-{0,dev,modules} libspa-0.2-{bluetooth,dev,jack,modules} pipewire{,-{audio-client-libraries,pulse,media-session,bin,locales,tests}}
+
+  #     - uses: actions/checkout@v2
+  #     - name: Install latest stable Rust
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #           toolchain: stable
+            
+  #     - uses: actions/cache@v2
+  #       with:
+  #         path: |
+  #           ~/.cargo/bin/
+  #           ~/.cargo/registry/index/
+  #           ~/.cargo/registry/cache/
+  #           ~/.cargo/git/db/
+  #           target/
+  #         key: ${{ runner.os }}-cargo-build-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml') }}
+
+  #     - name: Run cargo build
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: build
+  build:
+    name: Runs cargo build
+    runs-on: ubuntu-latest
+    container: fedora:40
+    steps:
+      - name: Install pipewire
+        # run: sudo add-apt-repository -y ppa:pipewire-debian/pipewire-upstream && sudo apt install -y gstreamer1.0-pipewire libpipewire-0.3-{0,dev,modules} libspa-0.2-{bluetooth,dev,jack,modules} pipewire{,-{audio-client-libraries,pulse,media-session,bin,locales,tests}}
+        run: sudo dnf -y install pipewire-devel 
+      - name: Install other build dependencies
+        # run: sudo apt install -y clang
+        run: sudo dnf -y install clang cmake nodejs fontconfig-devel
+        # run: sudo dnf install pipewire-devel
+    #   - name: Install xvfb and xcb
+    #     run: sudo apt install xvfb xcb
+
+      - uses: actions/checkout@v2
+      - name: Install latest stable Rust
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            
+      - uses: actions-rs/cargo@v1
+        with:
+            command: build
+            
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
