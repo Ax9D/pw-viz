@@ -1,11 +1,11 @@
 mod state;
 
 use pipewire::{
-    context::Context,
+    context::ContextRc,
     core::Core,
     link::LinkChangeMask,
-    main_loop::MainLoop,
-    registry::{GlobalObject, Registry},
+    main_loop::MainLoopRc,
+    registry::{GlobalObject, RegistryRc},
     spa::utils::dict::DictRef,
 };
 use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::mpsc::Sender};
@@ -75,20 +75,20 @@ struct ProxyLink {
     listener: pipewire::link::LinkListener,
 }
 
-/// Pipewire mainloop runs on a separate thread, and notifies the UI thread of any changes using a mpsc channel
+/// Pipewire main_loop runs on a separate thread, and notifies the UI thread of any changes using a mpsc channel
 /// thread_main is the entry point of this thread
 pub fn thread_main(
     sender: Rc<Sender<PipewireMessage>>,
     receiver: pipewire::channel::Receiver<UiMessage>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mainloop = MainLoop::new(None)?;
-    let context = Context::new(&mainloop)?;
-    let core = Rc::new(context.connect(None)?);
+    let main_loop = MainLoopRc::new(None)?;
+    let context = ContextRc::new(&main_loop, None)?;
+    let core = context.connect_rc(None)?;
 
     let proxies = Rc::new(RefCell::new(Default::default()));
     let proxies_rm = proxies.clone();
 
-    let registry = Rc::new(core.get_registry()?);
+    let registry = core.get_registry_rc()?;
     let registry_clone = registry.clone();
 
     let sender_rm = sender.clone();
@@ -144,9 +144,10 @@ pub fn thread_main(
 
     // This thread also receives messages from the ui thread to update the pipewire graph
     // Messages are sent on a special pipewire channel which needs to be registered with the main loop
-    let _receiver = receiver.attach(mainloop.loop_(), {
+
+    let mainloop_clone = main_loop.clone();
+    let _receiver = receiver.attach(main_loop.loop_(), {
         let state = state_rm_link;
-        let mainloop = mainloop.clone();
 
         move |message| match message {
             UiMessage::RemoveLink(link_id) => {
@@ -155,11 +156,11 @@ pub fn thread_main(
             UiMessage::AddLink { from_port, to_port } => {
                 add_link(&state, from_port, to_port, &core)
             }
-            UiMessage::Exit => mainloop.quit(),
+            UiMessage::Exit => mainloop_clone.quit(),
         }
     });
 
-    mainloop.run();
+    main_loop.run();
 
     Ok(())
 }
@@ -214,7 +215,7 @@ fn handle_link(
     link: &GlobalObject<&DictRef>,
     state: &Rc<RefCell<State>>,
     sender: &Rc<Sender<PipewireMessage>>,
-    registry: &Rc<Registry>,
+    registry: &RegistryRc,
     proxies: &Rc<RefCell<Proxies>>,
 ) {
     let proxy: pipewire::link::Link = registry.bind(link).expect("Failed to bind link proxy");
@@ -269,7 +270,8 @@ fn handle_link(
         .borrow_mut()
         .insert(link.id, ProxyLink { proxy, listener });
 }
-fn add_link(state: &Rc<RefCell<State>>, from_port: u32, to_port: u32, core: &Rc<Core>) {
+
+fn add_link(state: &Rc<RefCell<State>>, from_port: u32, to_port: u32, core: &Core) {
     let state = state.borrow();
     let from_port_ob = state
         .get(from_port)
@@ -308,7 +310,7 @@ fn add_link(state: &Rc<RefCell<State>>, from_port: u32, to_port: u32, core: &Rc<
     .expect("Failed to add new link");
 }
 
-fn remove_link(link_id: u32, state: &Rc<RefCell<State>>, registry: &Rc<Registry>) {
+fn remove_link(link_id: u32, state: &Rc<RefCell<State>>, registry: &RegistryRc) {
     if let Some(&state::GlobalObject::Link) = state.borrow_mut().get(link_id) {
         if let Err(err) = registry.destroy_global(link_id).into_result() {
             log::error!("SPA error: {}", err)
